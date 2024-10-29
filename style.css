@@ -7,7 +7,14 @@ body {
     overflow: hidden;
 }
 
-
+#plateau-image {
+    width: 100%; 
+    height: auto; 
+    position: absolute; 
+    top: -10; 
+    left: 0; 
+    z-index: 0; 
+}
 
 /* Plateau principal */
 #plateau {
@@ -18,6 +25,7 @@ body {
     height: 90vmin;
     max-width: 400px; 
     max-height: 400px;
+    background-image: url("img_siam/plateauSiam.jpg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -32,11 +40,10 @@ body {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     grid-template-rows: repeat(7, 1fr);
-    width: 130%;
     height: 130%;
     gap: 0.5%;
     aspect-ratio: 1; 
-    z-index: 3;
+    z-index: 2;
 }
 
 /* Cases de la grille */
@@ -49,12 +56,3 @@ body {
     background-color: rgba(209, 231, 221, 0.8);
 }
 
-#plateau-image {
-    width: 100%; 
-    height: auto; 
-    display: block; 
-    position: absolute; 
-    top: -10; 
-    left: 0; 
-    z-index: 0; 
-}
