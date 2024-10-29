@@ -1,0 +1,60 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+
+
+/* Plateau principal */
+#plateau {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90vmin; 
+    height: 90vmin;
+    max-width: 400px; 
+    max-height: 400px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
+    position: relative;
+    z-index: 1;
+
+    
+}
+
+/* Grille interne */
+#conteneurDeCases {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    width: 130%;
+    height: 130%;
+    gap: 0.5%;
+    aspect-ratio: 1; 
+    z-index: 3;
+}
+
+/* Cases de la grille */
+.case {
+    border: 3px dotted black;
+    z-index: 5;
+}
+
+.case:hover{
+    background-color: rgba(209, 231, 221, 0.8);
+}
+
+#plateau-image {
+    width: 100%; 
+    height: auto; 
+    display: block; 
+    position: absolute; 
+    top: -10; 
+    left: 0; 
+    z-index: 0; 
+}
