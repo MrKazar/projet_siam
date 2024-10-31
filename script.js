@@ -12,29 +12,33 @@ class Case{
         this.contenu = null; //Vaut null si la case est vide, sinon contient un objet de type Pion.
     }
 
+    getDiv(){
+        return this.div;
+    }
+
     enJeu(){
         //Vaut true si la case est dans la zone de jeu.
-        return 0 < this.X && this.X < 7 && 0 < this.Y && this.Y < 7;
+        return 0 < this.X && this.X < 6 && 0 < this.Y && this.Y < 6;
     }
 
     voisinHaut(){
-        if (!this.enJeu())return;
-        return tableCases[this.X-7];
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)-7];
     }
 
     voisinBas(){
-        if (!this.enJeu())return;
-        return tableCases[this.X+7];
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)+7];
     }
 
     voisinDroite(){
-        if (!this.enJeu())return;
-        return tableCases[this.X+1];
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)+1];
     }
 
     voisinGauche(){
-        if (!this.enJeu())return;
-        return tableCases[this.X-1];
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)-1];
     }
 
     setContenu(pion){
@@ -51,12 +55,15 @@ class Case{
 
 class Pion{
 
-    constructor(type,position){
-        this.rocher = (type === "rocher");//Vaut true si le pion est un rocher.
-        this.ryno = (type === "ryno");//Vaut true si le pion est un rynocéros.
-        this.ele = (type === "ele"); //Vaut true si le pion est un éléphant
-        this.direction = null; // un string qui vaut "droite","gauche","haut" où "bas". Vaut null si et seulement si le pion est un rocher.
+    constructor(type,position,direction=null){
+        if (!["rocher","ryno","ele"].includes(type))type = null;
+        this.type = type;
+        this.direction = direction; // un string qui vaut "droite","gauche","haut" où "bas". Vaut null si et seulement si le pion est un rocher.
         this.position = position; //La case où le pion est situé actuellement.
+    }
+
+    getType(){
+        return this.type;
     }
 
     getDirection(){
@@ -65,7 +72,7 @@ class Pion{
 
     setDirection(sens){
         if (this.rocher)return;
-        if (!sens in ["haut","bas","droite","gauche"])return;
+        if (!["haut","bas","droite","gauche"].includes(sens))return;
         this.direction = sens;
     }
 
@@ -73,13 +80,13 @@ class Pion{
         //Récupère le pion adjacent à this s'il existe.
         var voisin;
         switch (sens){
-            case "droite": voisin = this.position.voisinDroite().getContenu();
-            case "gauche": voisin = this.position.voisinGauche().getContenu();
-            case "haut": voisin = this.position.voisinDroite().getContenu();
-            case "bas": voisin = this.position.voisinBas().getContenu();
+            case "droite": voisin = this.position.voisinDroite().getContenu();break;
+            case "gauche": voisin = this.position.voisinGauche().getContenu();break;
+            case "haut": voisin = this.position.voisinHaut().getContenu();break;
+            case "bas": voisin = this.position.voisinBas().getContenu();break;
             default: voisin = null;
         }
-        return voisin;
+        return voisin ? voisin.getContenu() : null;
     }
 
     oppose(sens){
@@ -93,26 +100,70 @@ class Pion{
         }
     }
 
+    nbAmis(sens,res=1){
+        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la même direction que this.
+        var voisin = this.pionVoisin(sens);
+        if (!voisin)return res;
+        if (voisin.getDirection() === sens)res ++;
+        return voisin.nbAmis(sens,res);
+    }
+
+    nbAdversaires(sens,res=0){
+        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la direction opposée à this.
+        var voisin = this.pionVoisin(sens);
+        if (!voisin)return res;
+        if (voisin.getDirection() === this.oppose(sens))res ++;
+        return voisin.nbAdversaires(sens,res);
+    }
+
+    nbRochers(sens,res=0){
+        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de rochers.
+        var voisin = this.pionVoisin(sens);
+        if (!voisin)return res;
+        if (voisin.getType() === "rocher")res ++;
+        return voisin.nbRochers(sens,res);
+    }
+
+    peutPousser(sens){
+        //Détermine si on peut pousser dans une direction.
+        if (!this.pionVoisin(sens))return true;
+        var adv = this.nbAdversaires(sens,0);
+        var ami = this.nbAmis(sens,1);
+        var rocher = this.nbRochers(sens,0);
+        return (ami > adv && ami >= rocher);
+    }
+
     
 }
 
 class Affichage{
 
     updatePlateau(){
-        var imagePion = document.createElement("img")
+        var pionOrNull;
+        var platCase;
         for (platCase of tableCases){
-            if (platCase.contenu){
-                platCase.appendChild(imagePion);
-                //GERER L'APPARITION DE L'IMAGE DU PION ORIENTEE DANS LE BON SENS
-                //NOTE : TOUES LES INFORMATIONS NECESSAIRES SONT EN METHODE DE PLATCASE
-            }
+            pionOrNull = platCase.getContenu();
+            if (!pionOrNull) platCase.getDiv().style.backgroundColor = "black";
+            else if (pionOrNull.getType() === "ryno") platCase.getDiv().style.backgroundColor = "red";
+            else if (pionOrNull.getType() === "ele") platCase.getDiv().style.backgroundColor = "blue";
+            else if (pionOrNull.getType() === "rocher") platCase.getDiv().style.backgroundColor = "white";
+            else console.log("nu huh");
         }
     }
 
 }
 
+class Jeu{
 
-function placeDiv(){
+    constructor(){
+        this.aff = new Affichage();
+        this.placeDiv();
+        this.placePieces();
+        this.aff.updatePlateau();
+    }
+
+    placeDiv(){
+    //
     var caseDiv;
     var nbCases = 49;
     var i = 0;
@@ -123,8 +174,20 @@ function placeDiv(){
         plateau.appendChild(caseDiv);
         tableCases.push(new Case(caseDiv , i % 7 , Math.floor( i / 7 ) ));
     }
-    return;
+    return;}
+
+    placePieces(){
+        var i;
+        for(i=1;i<7-1;i++){
+            tableCases[i].setContenu(new Pion("ryno",tableCases[i],"bas"));
+            tableCases[48-i].setContenu(new Pion("ele",tableCases[48-i],"haut"));
+        }
+        tableCases[23].setContenu(new Pion("rocher",tableCases[23],null));
+        tableCases[24].setContenu(new Pion("rocher",tableCases[24],null));
+        tableCases[25].setContenu(new Pion("rocher",tableCases[25],null));
+    }
+
 }
 
-placeDiv();
-console.log(tableCases);
+var jeu = new Jeu();
+console.log(tableCases[2].getContenu().pionVoisin("droite"));
