@@ -78,6 +78,10 @@ class Case{
         this.accessible = state;
     }
 
+    estVide(){
+        return !(this.contenu);
+    }
+
 }
 
 class Pion{
@@ -198,6 +202,7 @@ class Affichage{
 
     affichePossibilites(tour){
         //Montre au joueur/joueuse toutes les cases où il/elle a le droit de placer le pion qu'il/elle a choisi.
+        //Enlève également toutes les cases mises en évidencde au tour d'avant.
         var couleur;
         var platCase;
         switch (tour){
@@ -209,6 +214,11 @@ class Affichage{
             if (platCase.getAccessible()){
                 platCase.getDiv().style.backgroundColor = couleur;
             }
+            else if (platCase.estVide()){
+                console.log("une case inaccesible à été assombrie.");
+                platCase.getDiv().style.backgroundColor = "transparent";
+            }
+
         }
         return;
     }
@@ -230,43 +240,16 @@ class Affichage{
 
 }
 
-class Interraction{
-
-    constructor() {
-        var x;
-        var y;
-        var i;
-        for (let i = 0; i < tableCases.length; i++) {
-            x = tableCases[i].getX();
-            y = tableCases[i].getY();
-            tableCases[i].getDiv().addEventListener("click",this.onClickEvent(x,y));
-        }
-        alert("should work");
-    }
-
-    onClickEvent(x,y){
-        console.log("AAAAAAAAA");
-        return function(){
-            alert("aoeifh");
-            alert(x);
-            alert(y);
-        };
-    }
-
-
-}
-
 class Jeu{
 
     constructor(){
-        //Le jeu est l'élément le plus global. Dès que possible, il doit déléguer les tâches à ses attributs.
+        //le jeu est à la jonction entre l'affichage et les règles. Dès que possible, il doit déléguer les tâches à ses attributs.
         this.timer = 0;
         this.aff = new Affichage();
         this.tour = "ele";
         this.aff.placeDiv();
         this.placePieces();
         this.aff.updatePlateau();
-        this.inter = new Interraction();
     }
 
     updatePlateau(){
@@ -302,12 +285,14 @@ class Jeu{
     }
 
     eteintPlateau() {
-        //Toutes les cases obtiennent le statur inaccesible.
+        //Toutes les cases obtiennent le statut inaccesible.
         tableCases.forEach(platCase => platCase.setAccessible(false));
+        this.aff.affichePossibilites(this.tour);
     }
 
     allumePossibilites(pionChoisi){
         //Le joueur a choisi un Pion, montrons lui où il est possible de le déplacer.
+        alert("allumons les possibilités");
         var caseAccessible;
         if (!pionChoisi){alert("Bro 'pion' was never real");}
         if (!pionChoisi.position.enJeu()){
@@ -324,8 +309,43 @@ class Jeu{
 
 }
 
-var jeu = new Jeu();
-tableCases[10].setContenu(new Pion("ele",tableCases[10],"bas"));
-tableCases[17].setContenu(new Pion("ele",tableCases[17],"bas"));
-jeu.updatePlateau();
-jeu.allumePossibilites(tableCases[10].getContenu());
+
+class Interface{
+
+    constructor() {
+        //Cette classe est la plus générale, car elle gère l'interaction au delà du jeu.
+        this.jeu = new Jeu();
+        this.jeu.updatePlateau();
+        var x;
+        var y;
+        var i;
+        for (let i = 0; i < tableCases.length; i++) {
+            x = tableCases[i].getX();
+            y = tableCases[i].getY();
+            tableCases[i].getDiv().addEventListener("click",this.onClickEvent(x,y,this.jeu));
+        }
+    }
+
+    onClickEvent(x,y,jeu){
+        return function(){
+            jeu.eteintPlateau();
+            var caseChoisie = gatherFromTableCases(x,y);
+            var pionChoisi = caseChoisie.getContenu();
+            if (pionChoisi){
+                jeu.allumePossibilites(pionChoisi);
+                return;
+            }
+            alert(caseChoisie.getAccessible());
+        };
+    }
+
+
+}
+
+function gatherFromTableCases(x,y){
+    //Récupère la case de coordonnées (x,y) dans tablecases.
+    var index = x+7*y;
+    return tableCases[index];
+}
+
+inter = new Interface();
