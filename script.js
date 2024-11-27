@@ -28,6 +28,60 @@ class Case {
     }
 
     setContenu(pion) {
+        this.accessible = false; //Indique au jeu si on aura le droit de placer un pion dans cette case au prochain tour.
+        //Le plateau est une matrice en 7x7. Les cases sur la circonférence sont extérieures au plateau.
+        this.contenu = null; //Vaut null si la case est vide, sinon contient un objet de type Pion.
+    }
+
+    getX(){
+        return this.X;
+    }
+
+    getY(){
+        return this.Y;
+    }
+
+    getDiv(){
+        return this.div;
+    }
+
+    enJeu(){
+        //Vaut true si la case est dans la zone de jeu.
+        return 0 < this.X && this.X < 6 && 0 < this.Y && this.Y < 6;
+    }
+
+    voisinHaut(){
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)-7];
+    }
+
+    voisinBas(){
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)+7];
+    }
+
+    voisinDroite(){
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)+1];
+    }
+
+    voisinGauche(){
+        if (!this.enJeu())return null;
+        return tableCases[(this.X+7*this.Y)-1];
+    }
+
+    caseVoisine(sens){
+        switch (sens){
+            case "haut": return this.voisinHaut();
+            case "bas": return this.voisinBas();
+            case "droite": return this.voisinDroite();
+            case "gauche": return this.voisinGauche();
+            default: return null;
+        }
+    }
+
+    setContenu(pion){
+        //Pour poser un pion sur une case où vider une case (setContenu(null))
         this.contenu = pion;
     }
 
@@ -363,11 +417,42 @@ class Jeu {
 }
 
 
-class Interface {
+class Interface{
+
     constructor() {
+        //Cette classe est la plus générale, car elle gère l'interaction au delà du jeu.
         this.jeu = new Jeu();
-        this.jeu.aff.updatePlateau();
+        this.jeu.updatePlateau();
+        var x;
+        var y;
+        var i;
+        for (let i = 0; i < tableCases.length; i++) {
+            x = tableCases[i].getX();
+            y = tableCases[i].getY();
+            tableCases[i].getDiv().addEventListener("click",this.onClickEvent(x,y,this.jeu));
+        }
     }
+
+    onClickEvent(x,y,jeu){
+        return function(){
+            jeu.eteintPlateau();
+            var caseChoisie = gatherFromTableCases(x,y);
+            var pionChoisi = caseChoisie.getContenu();
+            if (pionChoisi){
+                jeu.allumePossibilites(pionChoisi);
+                return;
+            }
+            alert(caseChoisie.getAccessible());
+        };
+    }
+
+
 }
 
-new Interface();
+function gatherFromTableCases(x,y){
+    //Récupère la case de coordonnées (x,y) dans tablecases.
+    var index = x+7*y;
+    return tableCases[index];
+}
+
+inter = new Interface();
