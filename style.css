@@ -5,7 +5,12 @@ body {
     min-height: 100vh;
     margin: 0;
     overflow: hidden;
+    background-image: url("img_siam/fond_siam.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
 }
+
 
 /* image du plateau */
 #plateau-image {
@@ -48,7 +53,6 @@ body {
 
 /* Cases de la grille */
 .case {
-    background-color: aqua;
     z-index: 3;
 }
 
@@ -66,3 +70,9 @@ body {
     background-color: rgba(209, 231, 221, 0.8);
 }
 
+.pion {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none; /* Évite d'intercepter les clics sur les images */
+}

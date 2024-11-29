@@ -1,33 +1,13 @@
 var plateau = document.getElementById("conteneurDeCases");
-var tableCases = []; // Toutes les cases du plateau sont rangées ici et numérotées de 0 à 48.
+var tableCases = []; //Toutes les cases du plateau sont rangées ici et numérotées de 0 à 48.
 
-class Case {
-    constructor(div, X, Y) {
-        this.div = div; // L'élément HTML associé à la case.
+
+class Case{
+
+    constructor(div , X , Y ) {
+        this.div = div; //Un moyen rapide de récupérer l'équivalent graphique à une case.
         this.X = X;
         this.Y = Y;
-        this.accessible = false; // Indique si un pion peut être placé ici.
-        this.contenu = null; // Null si la case est vide, sinon contient un objet de type Pion.
-    }
-
-    getX() {
-        return this.X;
-    }
-
-    getY() {
-        return this.Y;
-    }
-
-    getDiv() {
-        return this.div;
-    }
-
-    enJeu() {
-        // Retourne true si la case est dans la zone de jeu (pas sur les bords).
-        return 0 < this.X && this.X < 6 && 0 < this.Y && this.Y < 6;
-    }
-
-    setContenu(pion) {
         this.accessible = false; //Indique au jeu si on aura le droit de placer un pion dans cette case au prochain tour.
         //Le plateau est une matrice en 7x7. Les cases sur la circonférence sont extérieures au plateau.
         this.contenu = null; //Vaut null si la case est vide, sinon contient un objet de type Pion.
@@ -85,91 +65,40 @@ class Case {
         this.contenu = pion;
     }
 
-    getContenu() {
+    getContenu(){
+        //Si la case est vide retourne null, sinon retourne un pion.
         return this.contenu;
     }
 
-    estVide() {
-        return !this.contenu;
+    getAccessible(){
+        return this.accessible;
     }
 
-    // Méthode pour obtenir la case voisine dans une direction
-    caseVoisine(sens) {
-        let x = this.X;
-        let y = this.Y;
-        switch (sens) {
-            case "haut":
-                return tableCases[(y - 1) * 7 + x];  // Case au-dessus
-            case "bas":
-                return tableCases[(y + 1) * 7 + x];  // Case en-dessous
-            case "gauche":
-                return tableCases[y * 7 + (x - 1)];  // Case à gauche
-            case "droite":
-                return tableCases[y * 7 + (x + 1)];  // Case à droite
-            default:
-                return null;
-        }
+    setAccessible(state){
+        this.accessible = state;
     }
 
-    // Méthode pour définir si une case est accessible
-    setAccessible(accessible) {
-        this.accessible = accessible;
-        if (accessible) {
-            this.div.style.backgroundColor = "rgba(0, 255, 0, 0.5)";  // Couleur de survol
-        } else {
-            this.div.style.backgroundColor = "";
-        }
+    estVide(){
+        return !(this.contenu);
     }
+
 }
 
-class Pion {
-    constructor(type, position, direction = null) {
-        if (!["rocher", "ryno", "ele"].includes(type)) type = null;
+class Pion{
+
+    constructor(type,position,direction=null){
+        if (!["rocher","ryno","ele"].includes(type))type = null;
         this.type = type;
-        this.direction = direction; // "haut", "bas", "droite", "gauche"
-        this.position = position;
-        this.image = null; // Image associée au pion.
+        this.direction = direction; // un string qui vaut "droite","gauche","haut" où "bas". Vaut null si et seulement si le pion est un rocher.
+        this.position = position; //La case où le pion est situé actuellement.
     }
 
-    setImage(imagePath) {
-        this.image = imagePath;
-        if (this.position) {
-            // Appliquer l'image comme arrière-plan de la div de la case.
-            this.position.getDiv().style.backgroundImage = `url(${imagePath})`;
-            this.position.getDiv().style.backgroundSize = "cover";
-            this.position.getDiv().style.backgroundPosition = "center";
-
-            // Appliquer la rotation de l'image en fonction de la direction.
-            this.applyRotation();
-        }
-    }
-
-    getType() {
+    getType(){
         return this.type;
     }
 
-    getDirection() {
+    getDirection(){
         return this.direction;
-    }
-
-    setDirection(sens) {
-        if (this.type === "rocher") return;
-        if (!["haut", "bas", "droite", "gauche"].includes(sens)) return;
-        this.direction = sens;
-        this.applyRotation();  // Appliquer la rotation chaque fois que la direction change.
-    }
-
-    // Applique la rotation en fonction de la direction du pion
-    applyRotation() {
-        if (this.direction === "haut") {
-            this.position.getDiv().style.transform = "rotate(0deg)";
-        } else if (this.direction === "bas") {
-            this.position.getDiv().style.transform = "rotate(180deg)";
-        } else if (this.direction === "droite") {
-            this.position.getDiv().style.transform = "rotate(90deg)";
-        } else if (this.direction === "gauche") {
-            this.position.getDiv().style.transform = "rotate(-90deg)";
-        }
     }
 
     setDirection(sens){
@@ -178,6 +107,15 @@ class Pion {
         this.direction = sens;
     }
 
+    setImage(imagePath) {
+        // Associe une image au pion.
+        if (typeof imagePath !== 'string' || !imagePath.endsWith(".png")) {
+            console.error("setImage() : chemin d'image invalide !");
+            return;
+        }
+        this.image = imagePath;
+    }
+    
     pionVoisin(sens){
         //Récupère le pion adjacent à this s'il existe.
         var voisin;
@@ -252,129 +190,252 @@ class Pion {
         return res;
     }
 
+    
 }
 
-class Affichage {
+class Affichage{
 
-    placeDiv() {
-        // Construit la structure initiale du plateau.
+    constructor() {
+        this.initialized = false; // Indique si les pions ont déjà été placés.
+    }
+
+    updatePlateau() {
+        // Initialisation des pions lors du premier appel.
+        if (!this.initialized) {
+            this.placeInitialPieces(); // Appelle une méthode pour placer les pièces au début.
+            this.initialized = true;
+        }
+
+        // Parcourt le statut de chaque case et lui associe l'affichage requis.
+        var pionOrNull;
+        var platCase;
+        for (platCase of tableCases) {
+            pionOrNull = platCase.getContenu();
+            if (!pionOrNull) {
+                platCase.getDiv().style.backgroundColor = "transparent";
+                platCase.getDiv().style.backgroundImage = "none";
+            } else {
+                switch (pionOrNull.getType()) {
+                    case "ryno":
+                        platCase.getDiv().style.backgroundImage = `url(${pionOrNull.image})`;
+                        platCase.getDiv().style.backgroundSize = "cover";
+                        break;
+                    case "ele":
+                        platCase.getDiv().style.backgroundImage = `url(${pionOrNull.image})`;
+                        platCase.getDiv().style.backgroundSize = "cover";
+                        break;
+                    case "rocher":
+                        platCase.getDiv().style.backgroundImage = `url(${pionOrNull.image})`;
+                        platCase.getDiv().style.backgroundSize = "cover";
+                        break;
+                    default:
+                        console.log("Erreur : type de pion inconnu.");
+                }
+            }
+        }
+    }
+
+    placeInitialPieces() {
+        let indicesRochers = [23, 24, 25];  // Indices des cases qui accueilleront les rochers.
+        let indicesRynoes = [1, 2, 3, 4, 5];  // Indices des cases qui accueilleront les rynoes.
+        let indicesElephants = [43, 44, 45, 46, 47];  // Indices des cases qui accueilleront les éléphants.
+
+        // Chemins vers les images des rochers.
+        let imagesRochers = [
+            "./img_siam/Pieces/Rocher/rock1.png",
+            "./img_siam/Pieces/Rocher/rock2.png",
+            "./img_siam/Pieces/Rocher/rock3.png",
+            "./img_siam/Pieces/Rocher/rock4.png",
+            "./img_siam/Pieces/Rocher/rock5.png"
+        ];
+
+        // Chemins vers les images des rynoes.
+        let imagesRynoes = [
+            "./img_siam/Pieces/Rino/rino1.png",
+            "./img_siam/Pieces/Rino/rino2.png",
+            "./img_siam/Pieces/Rino/rino3.png",
+            "./img_siam/Pieces/Rino/rino4.png",
+            "./img_siam/Pieces/Rino/rino5.png"
+        ];
+
+        // Chemins vers les images des éléphants.
+        let imagesElephants = [
+            "./img_siam/Pieces/Elephant/ele1.png",
+            "./img_siam/Pieces/Elephant/ele2.png",
+            "./img_siam/Pieces/Elephant/ele3.png",
+            "./img_siam/Pieces/Elephant/ele4.png",
+            "./img_siam/Pieces/Elephant/ele5.png"
+        ];
+
+        // Mélange les images et sélectionne celles nécessaires.
+        let imagesChoisiesRochers = imagesRochers.sort(() => Math.random() - 0.5).slice(0, 3);
+        let imagesChoisiesRynoes = imagesRynoes.sort(() => Math.random() - 0.5).slice(0, 5);
+        let imagesChoisiesElephants = imagesElephants.sort(() => Math.random() - 0.5).slice(0, 5);
+
+        // Place les rochers sur les cases spécifiées.
+        indicesRochers.forEach((index, i) => {
+            let caseRocher = tableCases[index];
+            let rocher = new Pion("rocher", caseRocher, null);
+            rocher.setImage(imagesChoisiesRochers[i]); // Assigne une image au rocher.
+            caseRocher.setContenu(rocher); // Place le rocher sur la case.
+        });
+
+        // Place les rynoes sur les cases spécifiées.
+        indicesRynoes.forEach((index, i) => {
+            let caseRyno = tableCases[index];
+            let ryno = new Pion("ryno", caseRyno, "bas");
+            ryno.setImage(imagesChoisiesRynoes[i]); // Assigne une image au ryno.
+            caseRyno.setContenu(ryno); // Place le ryno sur la case.
+        });
+
+        // Place les éléphants sur les cases spécifiées.
+        indicesElephants.forEach((index, i) => {
+            let caseElephant = tableCases[index];
+            let elephant = new Pion("ele", caseElephant, "haut");
+            elephant.setImage(imagesChoisiesElephants[i]); // Assigne une image à l'éléphant.
+            caseElephant.setContenu(elephant); // Place l'éléphant sur la case.
+        });
+    }
+
+    affichePossibilites(tour){
+        //Montre au joueur/joueuse toutes les cases où il/elle a le droit de placer le pion qu'il/elle a choisi.
+        //Enlève également toutes les cases mises en évidencde au tour d'avant.
+        var couleur;
+        var platCase;
+        switch (tour){
+            case "ele": couleur="rgba(255,0,0,0.5)";break;
+            case "ryno": couleur="rgba(0,0,255,0.5)";break;
+            default : alert("alright something is not working.");return;
+        }
+        for (platCase of tableCases){
+            if (platCase.getAccessible()){
+                platCase.getDiv().style.backgroundColor = couleur;
+            }
+            else if (platCase.estVide()){
+                console.log("une case inaccesible à été assombrie.");
+                platCase.getDiv().style.backgroundColor = "transparent";
+            }
+
+        }
+        return;
+    }
+
+    placeDiv(){
+        //Construit la structure initiale de la page.
         var caseDiv;
-        var nbCases = 49; // 7x7 plateau
-        for (let i = 0; i < nbCases; i++) {
+        var nbCases = 49;
+        var i = 0;
+        for (i=0;i<nbCases;i++){
             caseDiv = document.createElement("div");
             caseDiv.classList.add("case");
             caseDiv.id = i;
             plateau.appendChild(caseDiv);
-            tableCases.push(new Case(caseDiv, i % 7, Math.floor(i / 7)));
+            tableCases.push(new Case(caseDiv , i % 7 , Math.floor( i / 7 ) ));
         }
+        return;
     }
 
-    updatePlateau() {
-        // Met à jour visuellement le plateau en fonction des contenus des cases.
-        for (let platCase of tableCases) {
-            // Supprimer tous les enfants de la case (nettoyage des images existantes)
-            while (platCase.getDiv().firstChild) {
-                platCase.getDiv().removeChild(platCase.getDiv().firstChild);
-            }
-
-            let pion = platCase.getContenu();
-            if (pion && pion.getType() === "rocher") {
-                let img = document.createElement("img");
-                img.src = pion.getImage();
-                img.style.width = "100%";
-                img.style.height = "100%";
-                img.style.objectFit = "contain";
-                platCase.getDiv().appendChild(img);
-            } else if (!pion) {
-                platCase.getDiv().style.backgroundColor = "transparent";
-            } else if (pion.getType() === "ryno") {
-                platCase.getDiv().style.backgroundColor = "red";
-            } else if (pion.getType() === "ele") {
-                platCase.getDiv().style.backgroundColor = "blue";
-            }
-        }
-    }
 }
 
-class Jeu {
+class Jeu{
+
     constructor() {
+        // Le jeu est à la jonction entre l'affichage et les règles
+        this.timer = 0;
         this.aff = new Affichage();
+        this.tour = "ele"; // "ele" pour Joueur 1, "ryno" pour Joueur 2
         this.aff.placeDiv();
-        this.placePieces(); // Place les rochers, rynoes et éléphants
+        this.placePieces();
         this.aff.updatePlateau();
-        this.activePion = null; // Pour stocker le pion sélectionné
+    }
+
+    updatePlateau(){
+        this.aff.updatePlateau();
+    }
+
+    updatePlayerBar() {
+        const player1 = document.getElementById('player1');
+        const player2 = document.getElementById('player2');
+
+        // Appliquer le shadow effect sur le joueur dont c'est le tour
+        if (this.tour === "ele") {
+            player1.style.boxShadow = "0 0 10px 2px rgba(0,0,255,0.7)"; // Bleu pour Joueur 1
+            player2.style.boxShadow = "none";
+        } else {
+            player2.style.boxShadow = "0 0 10px 2px rgba(255,0,0,0.7)"; // Rouge pour Joueur 2
+            player1.style.boxShadow = "none";
+        }
     }
 
     placePieces() {
-       
-        let indicesRochers = [23, 24, 25];  // Indices des cases centrales pour les rochers (les trois au centre)
-        
-
-        let indicesRynoes = [1, 2, 3, 4, 5];  // Les cases en haut du plateau
-
-        let indicesElephants = [43, 44, 45, 46, 47];  // Les cases en bas du plateau
-
-        // Chemins vers les images des rochers (en JPG).
+        let indicesRochers = [23, 24, 25];  // Indices des cases qui accueilleront les rochers
+        let indicesRynoes = [1, 2, 3, 4, 5];  // Indices des cases qui accueilleront les rynoes
+        let indicesElephants = [43, 44, 45, 46, 47];  // Indices des cases qui accueilleront les éléphants
+    
+        // Chemins vers les images des rochers (en png).
         let imagesRochers = [
-            "img_siam/Pieces/Rocher/rock1.jpg",
-            "img_siam/Pieces/Rocher/rock2.jpg",
-            "img_siam/Pieces/Rocher/rock3.jpg",
-            "img_siam/Pieces/Rocher/rock4.jpg",
-            "img_siam/Pieces/Rocher/rock5.jpg"
+            "./img_siam/Pieces/Rocher/rock1.png",
+            "./img_siam/Pieces/Rocher/rock2.png",
+            "./img_siam/Pieces/Rocher/rock3.png",
+            "./img_siam/Pieces/Rocher/rock4.png",
+            "./img_siam/Pieces/Rocher/rock5.png"
         ];
-        
-        // Chemins vers les images des rynoes (en JPG).
+    
+        // Chemins vers les images des rynoes (en png).
         let imagesRynoes = [
-            "img_siam/Pieces/Rino/rino1.jpg",
-            "img_siam/Pieces/Rino/rino2.jpg",
-            "img_siam/Pieces/Rino/rino3.jpg",
-            "img_siam/Pieces/Rino/rino4.jpg",
-            "img_siam/Pieces/Rino/rino5.jpg"
+            "./img_siam/Pieces/Rino/rino1.png",
+            "./img_siam/Pieces/Rino/rino2.png",
+            "./img_siam/Pieces/Rino/rino3.png",
+            "./img_siam/Pieces/Rino/rino4.png",
+            "./img_siam/Pieces/Rino/rino5.png"
         ];
-        
-        // Chemins vers les images des éléphants (en JPG).
+    
+        // Chemins vers les images des éléphants (en png).
         let imagesElephants = [
-            "img_siam/Pieces/Elephant/ele1.jpg",
-            "img_siam/Pieces/Elephant/ele2.jpg",
-            "img_siam/Pieces/Elephant/ele3.jpg",
-            "img_siam/Pieces/Elephant/ele4.jpg",
-            "img_siam/Pieces/Elephant/ele5.jpg"
+            "./img_siam/Pieces/Elephant/ele1.png",
+            "./img_siam/Pieces/Elephant/ele2.png",
+            "./img_siam/Pieces/Elephant/ele3.png",
+            "./img_siam/Pieces/Elephant/ele4.png",
+            "./img_siam/Pieces/Elephant/ele5.png"
         ];
-
+    
         // Mélange les images et sélectionne trois au hasard pour les rochers.
         let imagesChoisiesRochers = imagesRochers.sort(() => Math.random() - 0.5).slice(0, 3);
-
+    
         // Mélange les images et sélectionne cinq au hasard pour les rynoes.
         let imagesChoisiesRynoes = imagesRynoes.sort(() => Math.random() - 0.5).slice(0, 5);
-
+    
         // Mélange les images et sélectionne cinq au hasard pour les éléphants.
         let imagesChoisiesElephants = imagesElephants.sort(() => Math.random() - 0.5).slice(0, 5);
-
-        // Place les rochers sur les cases centrales avec des images choisies aléatoirement.
+    
+        // Place les rochers sur les cases qui étaient blanches avec des images choisies aléatoirement.
         indicesRochers.forEach((index, i) => {
             let caseRocher = tableCases[index];
-            let rocher = new Pion("rocher", caseRocher, null);
-            rocher.setImage(imagesChoisiesRochers[i]);
-            caseRocher.setContenu(rocher);
+            let rocher = new Pion("rocher", caseRocher, null); // Crée un Rocher
+            rocher.setImage(imagesChoisiesRochers[i]); // Assigne une image aléatoire au rocher
+            caseRocher.setContenu(rocher); // Place le rocher sur la case
+            console.log(`Rocher placé sur case ${index} avec image ${imagesChoisiesRochers[i]}`);
         });
-
+    
         // Place les rynoes sur les cases rouges avec des images choisies aléatoirement.
         indicesRynoes.forEach((index, i) => {
             let caseRyno = tableCases[index];
-            let ryno = new Pion("ryno", caseRyno, "bas");  // Orientation à "bas" pour la tête en bas
-            ryno.setImage(imagesChoisiesRynoes[i]);
-            caseRyno.setContenu(ryno);
+            let ryno = new Pion("ryno", caseRyno, "bas"); // Crée un Ryno
+            ryno.setImage(imagesChoisiesRynoes[i]); // Assigne une image aléatoire au Ryno
+            caseRyno.setContenu(ryno); // Place le Ryno sur la case
+            console.log(`Ryno placé sur case ${index} avec image ${imagesChoisiesRynoes[i]}`);
         });
-
+    
         // Place les éléphants sur les cases bleues avec des images choisies aléatoirement.
         indicesElephants.forEach((index, i) => {
             let caseElephant = tableCases[index];
-            let elephant = new Pion("ele", caseElephant, "haut");  // Orientation à "haut"
-            elephant.setImage(imagesChoisiesElephants[i]);
-            caseElephant.setContenu(elephant);
+            let elephant = new Pion("ele", caseElephant, "haut"); // Crée un Elephant
+            elephant.setImage(imagesChoisiesElephants[i]); // Assigne une image aléatoire à l'éléphant
+            caseElephant.setContenu(elephant); // Place l'éléphant sur la case
+            console.log(`Elephant placé sur case ${index} avec image ${imagesChoisiesElephants[i]}`);
         });
     }
-
+    
     allumeCirconference(){
         //Donne à toutes les cases sur la circonférence de la zone de jeu le statut "accessible"
         //Exeption : la règle du jeu spécifie que tant que trois tours de jeu n'ont pas eu lieu, les cases sur la colonne centrale sont interdites.
@@ -389,6 +450,17 @@ class Jeu {
             tableCases[10].setAccessible(false);
             tableCases[tableCases.length - 1 - 10].setAccessible(false);
         }
+    }
+
+    changerDeTour() {
+        if (this.tour === "ele") {
+            this.tour = "ryno";
+        } else {
+            this.tour = "ele";
+        }
+
+        // Met à jour la barre des joueurs après chaque changement de tour
+        this.updatePlayerBar();
     }
 
     eteintPlateau() {
@@ -417,36 +489,77 @@ class Jeu {
 }
 
 
-class Interface{
+class Interface {
 
     constructor() {
-        //Cette classe est la plus générale, car elle gère l'interaction au delà du jeu.
+        // Cette classe est la plus générale, car elle gère l'interaction au-delà du jeu.
         this.jeu = new Jeu();
         this.jeu.updatePlateau();
+        
+        // Ajout de la barre en haut de l'écran
+        this.addPlayerBar();
+        
         var x;
         var y;
         var i;
         for (let i = 0; i < tableCases.length; i++) {
             x = tableCases[i].getX();
             y = tableCases[i].getY();
-            tableCases[i].getDiv().addEventListener("click",this.onClickEvent(x,y,this.jeu));
+            tableCases[i].getDiv().addEventListener("click", this.onClickEvent(x, y, this.jeu));
         }
     }
 
-    onClickEvent(x,y,jeu){
-        return function(){
+    // Fonction pour ajouter la barre des joueurs
+    addPlayerBar() {
+        const bar = document.createElement('div');
+        bar.id = 'playerBar'; // Id pour la barre
+        bar.style.backgroundColor = '#A4D3A2'; // Fond verdâtre
+        bar.style.height = '20px';
+        bar.style.width = '100%';  // Prend toute la largeur de l'écran
+        bar.style.position = 'fixed';  // Fixe la barre en haut
+        bar.style.top = '0';  // Positionne la barre en haut de la page
+        bar.style.left = '0';  // Prend toute la largeur
+        bar.style.display = 'flex';
+        bar.style.justifyContent = 'space-between';
+        bar.style.padding = '5px';
+        bar.style.alignItems = 'center';
+        bar.style.zIndex = '1000';  // Assure que la barre est au-dessus des autres éléments
+
+        const player1 = document.createElement('div');
+        player1.id = 'player1';
+        player1.textContent = "Joueur 1";
+        player1.style.color = 'blue';
+        player1.style.fontWeight = 'bold';
+        player1.style.textAlign = 'center';
+        player1.style.width = '50%';
+
+        const player2 = document.createElement('div');
+        player2.id = 'player2';
+        player2.textContent = "Joueur 2";
+        player2.style.color = 'red';
+        player2.style.fontWeight = 'bold';
+        player2.style.textAlign = 'center';
+        player2.style.width = '50%';
+
+        bar.appendChild(player1);
+        bar.appendChild(player2);
+
+        // Ajouter la barre au body ou au conteneur du jeu
+        document.body.appendChild(bar);
+    }
+
+    onClickEvent(x, y, jeu) {
+        return function () {
             jeu.eteintPlateau();
-            var caseChoisie = gatherFromTableCases(x,y);
+            var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
-            if (pionChoisi){
+            if (pionChoisi) {
                 jeu.allumePossibilites(pionChoisi);
                 return;
             }
             alert(caseChoisie.getAccessible());
         };
     }
-
-
 }
 
 function gatherFromTableCases(x,y){
