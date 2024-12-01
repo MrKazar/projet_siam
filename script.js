@@ -56,7 +56,7 @@ class Case{
             case "bas": return this.voisinBas();
             case "droite": return this.voisinDroite();
             case "gauche": return this.voisinGauche();
-            default: return null;
+            default: {alert(`caseVoisine(${sens}) : didn't find anything`) ; return null;}
         }
     }
 
@@ -123,7 +123,7 @@ class Pion{
         //Récupère le pion adjacent à this s'il existe.
         var voisin;
         voisin = this.position.caseVoisine(sens);
-        return voisin.getContenu() ? voisin.getContenu() : null;
+        return voisin ? voisin.getContenu() : null;
     }
 
     oppose(sens){
@@ -163,9 +163,19 @@ class Pion{
 
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
-        if (!this.position.caseVoisine(sens).enJeu()){return false}//On ne peut pas se déplacer en sortant de la zone de jeu.
-        if (!this.pionVoisin(sens)){return true;} //On peut toujours pousser quand la case voisine est vide.
-        if (this.direction !== sens)return false;
+        console.log("PeutPousser() : a été appelé.");
+        if (!this.position.caseVoisine(sens).enJeu()){
+            //On est au bord du plateau, on ne peut donc pas pousser.
+            return false;
+        }
+        if (!this.pionVoisin(sens)){
+            //Pas de voisin, donc on peut pousser
+            return true;
+        }
+        if (this.direction !== sens){
+            //La pièce n'est pas orientée correctement, on ne peut pas pousser.
+            return false;
+        }
         var adv = this.nbAdversaires(sens,0);
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
@@ -174,24 +184,28 @@ class Pion{
 
     poussePion(sens){
         //Fonction récursive qui permet de pousser une rangée à partir du pion this.
-        if (!this.pionVoisin(sens)){
-            this.position.caseVoisine(sens).setContenu(this);
-            this.position.setContenu(null);
+        var target = this.position.caseVoisine(sens);
+        var voisin = this.pionVoisin(sens);
+        console.log(`PoussePion(${sens}) : case voisine = ${target}`);
+        if (!voisin){
+            this.deplacePion(target , true);
+            return
         }
-        this.pionVoisin(sens).poussePion(sens);
-        this.position.caseVoisine(sens).setContenu(this);
-        this.position.setContenu(null);
+        voisin.poussePion(sens);
+        this.deplacePion(target , true);
     }
 
-    deplacePion(destiCase){
+    deplacePion(destiCase , byForce){
         //Déplace directement le pion pour le placer sur destiCase.
-        if (!destiCase.getAccessible()){
-            alert("Déplacement illégal détecté.")
+        //
+        if (!destiCase.getAccessible() && !byForce){
+            alert("Déplacement illégal détecté.");
+            return;
         }
         this.position.setContenu(null);
         destiCase.setContenu(this);
         this.position = destiCase;
-
+        return;
     }
 
     getPossibilites(){
@@ -248,8 +262,26 @@ class Affichage{
                     default:
                         console.log("Erreur : type de pion inconnu.");
                 }
+                this.rotateImage(pionOrNull);
             }
         }
+    }
+
+    getImageRotation(pion){
+        var sens = pion.getDirection();
+        switch(sens){
+            case "haut" : return "rotate(0deg)";
+            case "bas" : return "rotate(180deg)";
+            case "droite" : return "rotate(90deg)";
+            case "gauche" : return "rotate(270deg)";
+            default : {alert(`getImageRotation(${pion}) , sens is ${sens}`);return;}
+        }
+    }
+
+    rotateImage(pion){
+        if (!pion)return;
+        if (!["ele","ryno"].includes(pion.getType()))return;
+        pion.position.getDiv().style.transform = this.getImageRotation(pion);
     }
 
     placeInitialPieces() {
@@ -320,8 +352,8 @@ class Affichage{
         var couleur;
         var platCase;
         switch (tour){
-            case "ele": couleur="rgba(255,0,0,0.5)";break;
-            case "ryno": couleur="rgba(0,0,255,0.5)";break;
+            case "ele": couleur="rgba(0,0,255,0.5)";break;
+            case "ryno": couleur="rgba(255,0,0,0.5)";break;
             default : alert("alright something is not working.");return;
         }
         for (platCase of tableCases){
@@ -483,6 +515,10 @@ class Jeu{
         this.updatePlayerBar();
     }
 
+    getTour(){
+        return this.tour;
+    }
+
     eteintPlateau() {
         //Toutes les cases obtiennent le statut inaccesible.
         tableCases.forEach(platCase => platCase.setAccessible(false));
@@ -495,7 +531,7 @@ class Jeu{
             alert(`Pas touche ! C'est le tour des ${this.tour}`);
             return;
         }
-        alert("allumons les possibilités");
+        //alert("allumons les possibilités");
         var caseAccessible;
         if (!pionChoisi){alert("Bro 'pion' was never real");}
         if (!pionChoisi.position.enJeu()){
@@ -576,11 +612,25 @@ class Interface {
 
     onClickEvent(x, y, jeu) {
         return function () {
-           // console.log(`buffer value : ${this.buffer}`);
+            //console.log(`buffer value : ${this.buffer}`);
             //jeu.eteintPlateau();
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
+                if (pionChoisi.getType() != jeu.getTour()){
+                    console.log(this.buffer);
+                    if (this.buffer){
+                        //Le joueur souhaite pousser une rangée.
+                        this.buffer.poussePion(this.buffer.getDirection());
+                        this.jeu.updatePlateau();
+                        this.jeu.changerDeTour();
+                        this.jeu.eteintPlateau();
+                        this.buffer = null;
+                        return;
+                    }
+                    alert(`onClickEvent() : c'est le tour des ${jeu.getTour()} !`);
+                    return;
+                }
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
                 //console.log(`Buffer set to ${this.buffer}`);
@@ -590,11 +640,13 @@ class Interface {
                 if (!this.buffer){
                     alert(`onClickEvent() : buffer is ${this.buffer}`)
                 }
-                //alert("went through")
-                this.buffer.deplacePion(caseChoisie);
+                //Le joueur se déplace sur une case non adjacente.
+                this.buffer.deplacePion(caseChoisie, false);
                 this.jeu.updatePlateau();
                 this.jeu.changerDeTour();
                 this.jeu.eteintPlateau();
+                this.buffer = null;
+                return;
             }
         }.bind(this);
     }
