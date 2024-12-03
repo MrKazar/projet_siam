@@ -384,7 +384,110 @@ class Affichage{
         return;
     }
 
-}
+    openRotationPopUp(func, pionChoisi) {
+        // Crée l'interface qui interroge le joueur sur son choix de direction.
+        // Lorsque le formulaire est validé, func sera appelée avec le résultat et pionChoisi.
+        const overlay = document.createElement("div");
+        overlay.style.position = "fixed";
+        overlay.style.top = "0";
+        overlay.style.left = "0";
+        overlay.style.width = "100%";
+        overlay.style.height = "100%";
+        overlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        overlay.style.zIndex = "10";
+        overlay.id = "popup-overlay";
+    
+        const popUp = document.createElement("div");
+        popUp.style.position = "absolute";
+        popUp.style.top = "50%";
+        popUp.style.left = "50%";
+        popUp.style.transform = "translate(-50%, -50%)";
+        popUp.style.zIndex = "11";
+        popUp.style.width = "80vmin";
+        popUp.style.maxWidth = "350px";
+        popUp.style.backgroundColor = "white";
+        popUp.style.padding = "20px";
+        popUp.style.borderRadius = "10px";
+        popUp.style.textAlign = "center";
+    
+        const text = document.createElement("h2");
+        text.textContent = "Dans quelle direction faut-il orienter la pièce ?";
+        text.style.marginBottom = "20px";
+        text.style.color = "#333";
+        popUp.appendChild(text);
+    
+        const buttonContainer = document.createElement("div");
+        buttonContainer.style.display = "grid";
+        buttonContainer.style.gridTemplateColumns = "repeat(2, 1fr)";
+        buttonContainer.style.gap = "10px";
+        buttonContainer.style.marginBottom = "20px";
+    
+        const directions = ["haut", "bas", "gauche", "droite"];
+        let selectedButton = null;
+    
+        directions.forEach((direction) => {
+            const btn = document.createElement("button");
+            btn.textContent = direction;
+    
+            btn.style.padding = "10px";
+            btn.style.border = "1px solid rgba(255,128,0)";
+            btn.style.borderRadius = "5px";
+            btn.style.backgroundColor = "#f7f7f7";
+            btn.style.color = "#333";
+            btn.style.cursor = "grabbing";
+            btn.style.transition = "all 0.2s ease";
+    
+            btn.addEventListener("click", (event) => {
+                event.preventDefault();
+                if (selectedButton) {
+                    selectedButton.style.border = "1px solid #ccc";
+                    selectedButton.style.backgroundColor = "#f7f7f7";
+                    selectedButton.style.color = "#333";
+                    selectedButton.style.transform = "none";
+                    selectedButton.style.boxShadow = "none";
+                }
+                selectedButton = btn;
+                btn.style.border = "2px solid rgba(255,128,0)";
+                btn.style.backgroundColor = "#e6f7ff";
+                btn.style.color = "rgba(255,128,0)";
+                btn.style.transform = "scale(1.1)";
+            });
+    
+            buttonContainer.appendChild(btn);
+        });
+    
+        popUp.appendChild(buttonContainer);
+    
+        const form = document.createElement("form");
+        form.style.marginTop = "20px";
+    
+        const submit = document.createElement("button");
+        submit.type = "submit";
+        submit.textContent = "C'est parti";
+        submit.style.padding = "10px 20px";
+        submit.style.backgroundColor = "rgba(255,128,0)";
+        submit.style.color = "white";
+        submit.style.border = "none";
+        submit.style.borderRadius = "5px";
+        submit.style.cursor = "grabbing";
+    
+        form.addEventListener("submit", (event) => {
+            event.preventDefault(); //IMPORTANT ! (sinon toute la partie est perdue)
+            if (selectedButton) {
+                document.body.removeChild(overlay);
+                func(selectedButton.textContent, pionChoisi);
+            } else {
+                alert("Aucune orientation sélectionnée !");
+            }
+        });
+    
+        form.appendChild(submit);
+        popUp.appendChild(form);
+    
+        overlay.appendChild(popUp);
+        document.body.appendChild(overlay);
+    }}
+    
 
 class Jeu{
 
@@ -546,6 +649,18 @@ class Jeu{
         return;
     }
 
+    askForRotation(pionChoisi){
+        //Propose au joueur de tourner sa pièce.
+        this.aff.openRotationPopUp((sens) => this.handleRotation(sens, pionChoisi));
+    }
+
+    handleRotation(sens,pionChoisi){
+        pionChoisi.setDirection(sens);
+        this.updatePlateau();
+    }
+
+
+
 }
 
 
@@ -642,6 +757,7 @@ class Interface {
                 }
                 //Le joueur se déplace sur une case non adjacente.
                 this.buffer.deplacePion(caseChoisie, false);
+                this.jeu.askForRotation(this.buffer);
                 this.jeu.updatePlateau();
                 this.jeu.changerDeTour();
                 this.jeu.eteintPlateau();
