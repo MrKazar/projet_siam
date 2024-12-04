@@ -145,12 +145,15 @@ class Pion{
         return voisin.nbAmis(sens,res);
     }
 
-    nbAdversaires(sens,res=0){
-        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la direction opposée à this.
+    rapportDeForce(sens,res=1){
+        //Parcourt récurcivement une rangée en incrémentant res de 1 lorsqu'on rencontre une pièce orientée dans notre sens et -1 si on rencontre une pièce qui fait face.
+        //Si on atteint une case vide où hors jeu, retourne true. Si res vaut 0, retourne immédiatement false.
+        if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
-        if (!voisin)return res;
-        if (voisin.getDirection() === this.oppose(sens))res ++;
-        return voisin.nbAdversaires(sens,res);
+        if (!voisin)return true;
+        if (voisin.getDirection() == sens)return voisin.rapportDeForce(sens,res+1);
+        if (voisin.getDirection() == this.oppose(sens))return voisin.rapportDeForce(sens,res-1);
+        return voisin.rapportDeForce(sens,res);
     }
 
     nbRochers(sens,res=0){
@@ -166,7 +169,7 @@ class Pion{
         console.log("PeutPousser() : a été appelé.");
         if (!this.position.caseVoisine(sens).enJeu()){
             //On est au bord du plateau, on ne peut donc pas pousser.
-            return false;
+            return true;//////////////
         }
         if (!this.pionVoisin(sens)){
             //Pas de voisin, donc on peut pousser
@@ -176,10 +179,9 @@ class Pion{
             //La pièce n'est pas orientée correctement, on ne peut pas pousser.
             return false;
         }
-        var adv = this.nbAdversaires(sens,0);
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
-        return (ami > adv && ami >= rocher);
+        return (this.rapportDeForce(sens) && ami >= rocher);
     }
 
     poussePion(sens){
@@ -659,6 +661,10 @@ class Jeu{
         this.updatePlateau();
     }
 
+    incrementeTimer(){
+        this.timer ++;
+    }
+
 
 
 }
@@ -740,12 +746,14 @@ class Interface {
                         this.jeu.updatePlateau();
                         this.jeu.changerDeTour();
                         this.jeu.eteintPlateau();
+                        this.incrementeTimer();
                         this.buffer = null;
                         return;
                     }
                     alert(`onClickEvent() : c'est le tour des ${jeu.getTour()} !`);
                     return;
                 }
+                jeu.eteintPlateau();///////////
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
                 //console.log(`Buffer set to ${this.buffer}`);
@@ -761,6 +769,7 @@ class Interface {
                 this.jeu.updatePlateau();
                 this.jeu.changerDeTour();
                 this.jeu.eteintPlateau();
+                this.jeu.incrementeTimer();
                 this.buffer = null;
                 return;
             }
