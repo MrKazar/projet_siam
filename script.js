@@ -181,6 +181,8 @@ class Pion{
         }
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
+        console.log(ami);
+        console.log(rocher);
         return (this.rapportDeForce(sens) && ami >= rocher);
     }
 
@@ -700,6 +702,9 @@ class Jeu{
 
     pionBackHome(pion){
         //Renvoie un pion dans sa réserve.
+        if (pion.getType() == "rocher"){
+            alert("Condition de victoire atteinte !!");
+        }
         var destiCase = this.findHome(pion.getType());
         console.log(`Jeu.pionBackHome() : destiCase is ${destiCase}`);
         pion.deplacePion(destiCase,true);
@@ -794,7 +799,7 @@ class Interface {
             if (pionChoisi) {
                 if (pionChoisi.getType() != jeu.getTour()){
                     console.log(this.buffer);
-                    if (this.buffer && pionChoisi === this.buffer.pionVoisin(this.buffer.getDirection())){
+                    if (this.readyToPush(pionChoisi)){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
                         this.MovementProcedure(false);
@@ -821,6 +826,13 @@ class Interface {
                 return;
             }
         }.bind(this);
+    }
+
+    readyToPush(pionChoisi){
+        if (!this.buffer)return false; 
+        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;
+        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;
+        return true;
     }
 
     playerFriendlyLanguage(tour){
