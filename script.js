@@ -794,7 +794,7 @@ class Interface {
             if (pionChoisi) {
                 if (pionChoisi.getType() != jeu.getTour()){
                     console.log(this.buffer);
-                    if (this.buffer){
+                    if (this.buffer && pionChoisi === this.buffer.pionVoisin(this.buffer.getDirection())){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
                         this.MovementProcedure(false);
@@ -804,7 +804,7 @@ class Interface {
                     alert(`C'est le tour des ${this.playerFriendlyLanguage(jeu.getTour())} !`);
                     return;
                 }
-                jeu.eteintPlateau();///////////
+                jeu.eteintPlateau();
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
                 //console.log(`Buffer set to ${this.buffer}`);
