@@ -181,6 +181,8 @@ class Pion{
         }
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
+        console.log(ami);
+        console.log(rocher);
         return (this.rapportDeForce(sens) && ami >= rocher);
     }
 
@@ -219,6 +221,8 @@ class Pion{
         if (this.peutPousser("gauche")){res.push(this.position.voisinGauche())}
         return res;
     }
+
+    
 }
 
 class Affichage{
@@ -228,11 +232,13 @@ class Affichage{
     }
 
     updatePlateau() {
-
+        // Initialisation des pions lors du premier appel.
         if (!this.initialized) {
-            this.placeInitialPieces();
+            this.placeInitialPieces(); // Appelle une méthode pour placer les pièces au début.
             this.initialized = true;
         }
+
+        // Parcourt le statut de chaque case et lui associe l'affichage requis.
         var pionOrNull;
         var platCase;
         for (platCase of tableCases) {
@@ -336,6 +342,8 @@ class Affichage{
     }
 
     affichePossibilites(tour){
+        //Montre au joueur/joueuse toutes les cases où il/elle a le droit de placer le pion qu'il/elle a choisi.
+        //Enlève également toutes les cases mises en évidencde au tour d'avant.
         var couleur;
         var platCase;
         switch (tour){
@@ -348,6 +356,7 @@ class Affichage{
                 platCase.getDiv().style.backgroundColor = couleur;
             }
             else if (platCase.estVide()){
+                //console.log("une case inaccesible à été assombrie.");
                 platCase.getDiv().style.backgroundColor = "transparent";
             }
 
@@ -356,6 +365,7 @@ class Affichage{
     }
 
     placeDiv(){
+        //Construit la structure initiale de la page.
         var caseDiv;
         var nbCases = 49;
         var i = 0;
@@ -370,7 +380,8 @@ class Affichage{
     }
 
     openRotationPopUp(func, pionChoisi) {
-
+        // Crée l'interface qui interroge le joueur sur son choix de direction.
+        // Lorsque le formulaire est validé, func sera appelée avec le résultat et pionChoisi.
         const overlay = document.createElement("div");
         overlay.style.position = "fixed";
         overlay.style.top = "0";
@@ -476,6 +487,7 @@ class Affichage{
 class Jeu{
 
     constructor() {
+        // Le jeu est à la jonction entre l'affichage et les règles
         this.timer = 0;
         this.aff = new Affichage();
         this.tour = "ele";
@@ -489,29 +501,29 @@ class Jeu{
     }
 
     updatePlayerBar() {
-      const barreBleu = document.getElementById('barreBleu');
-      const barreRouge = document.getElementById('barreRouge');
-    
-      if (this.tour === 'ele') {
-        barreBleu.style.boxShadow = '20px 0px 20px rgba(173, 216, 230, 0.8)';
-        barreBleu.style.backgroundColor = 'blue';
-
-        barreRouge.style.boxShadow = 'none';
-        barreRouge.style.backgroundColor = 'lightcoral';
-      } else {
-        barreRouge.style.boxShadow = '-20px 0px 20px rgba(240, 128, 128, 0.8)';
-        barreRouge.style.backgroundColor = 'red';
-        
-        barreBleu.style.boxShadow = 'none';
-        barreBleu.style.backgroundColor = 'lightblue';
+        const barreBleu = document.getElementById('barreBleu');
+        const barreRouge = document.getElementById('barreRouge');
+      
+        if (this.tour === 'ele') {
+          barreBleu.style.boxShadow = '20px 0px 20px rgba(173, 216, 230, 0.8)';
+          barreBleu.style.backgroundColor = 'blue';
+  
+          barreRouge.style.boxShadow = 'none';
+          barreRouge.style.backgroundColor = 'lightcoral';
+        } else {
+          barreRouge.style.boxShadow = '-20px 0px 20px rgba(240, 128, 128, 0.8)';
+          barreRouge.style.backgroundColor = 'red';
+          
+          barreBleu.style.boxShadow = 'none';
+          barreBleu.style.backgroundColor = 'lightblue';
+        }
       }
-    }
 
     placePieces() {
         let indicesRochers = [23, 24, 25];
         let indicesRynoes = [1, 2, 3, 4, 5];
         let indicesElephants = [43, 44, 45, 46, 47];
-    
+
         let imagesRochers = [
             "./img_siam/Pieces/Rocher/rock1.png",
             "./img_siam/Pieces/Rocher/rock2.png",
@@ -519,7 +531,7 @@ class Jeu{
             "./img_siam/Pieces/Rocher/rock4.png",
             "./img_siam/Pieces/Rocher/rock5.png"
         ];
-    
+
         let imagesRynoes = [
             "./img_siam/Pieces/Rino/rino1.png",
             "./img_siam/Pieces/Rino/rino2.png",
@@ -527,7 +539,7 @@ class Jeu{
             "./img_siam/Pieces/Rino/rino4.png",
             "./img_siam/Pieces/Rino/rino5.png"
         ];
-    
+
         let imagesElephants = [
             "./img_siam/Pieces/Elephant/ele1.png",
             "./img_siam/Pieces/Elephant/ele2.png",
@@ -537,11 +549,9 @@ class Jeu{
         ];
 
         let imagesChoisiesRochers = imagesRochers.sort(() => Math.random() - 0.5).slice(0, 3);
-
         let imagesChoisiesRynoes = imagesRynoes.sort(() => Math.random() - 0.5).slice(0, 5);
-
         let imagesChoisiesElephants = imagesElephants.sort(() => Math.random() - 0.5).slice(0, 5);
-
+    
         indicesRochers.forEach((index, i) => {
             let caseRocher = tableCases[index];
             let rocher = new Pion("rocher", caseRocher, null);
@@ -558,11 +568,13 @@ class Jeu{
             let caseElephant = tableCases[index];
             let elephant = new Pion("ele", caseElephant, "haut");
             elephant.setImage(imagesChoisiesElephants[i]);
-            caseElephant.setContenu(elephant); 
+            caseElephant.setContenu(elephant);
         });
     }
     
     allumeCirconference(){
+        //Donne à toutes les cases sur la circonférence de la zone de jeu le statut "accessible"
+        //Exeption : la règle du jeu spécifie que tant que trois tours de jeu n'ont pas eu lieu, les cases sur la colonne centrale sont interdites.
         var i;
         for (i=0;i<5;i++){
             tableCases[8+i].setAccessible(true);
@@ -618,7 +630,6 @@ class Jeu{
         return;
     }
 
-
     askForRotation(pionChoisi){
         //Propose au joueur de tourner sa pièce.
         if (!pionChoisi.position.enJeu()){
@@ -668,6 +679,9 @@ class Jeu{
 
     pionBackHome(pion){
         //Renvoie un pion dans sa réserve.
+        if (pion.getType() == "rocher"){
+            alert("Condition de victoire atteinte !!");
+        }
         var destiCase = this.findHome(pion.getType());
         console.log(`Jeu.pionBackHome() : destiCase is ${destiCase}`);
         pion.deplacePion(destiCase,true);
@@ -695,10 +709,12 @@ class Jeu{
 class Interface {
 
     constructor() {
+        // Cette classe est la plus générale, car elle gère l'interaction au-delà du jeu.
         this.jeu = new Jeu();
         this.jeu.updatePlateau();
-        this.buffer = null;
+        this.buffer = null; //Pointe vers le pion que le joueur a séléctionné.
         
+        // Ajout de la barre en haut de l'écran
         this.addPlayerBar();
         
         var x;
@@ -712,6 +728,7 @@ class Interface {
         }
     }
 
+    // Fonction pour ajouter la barre des joueurs
     addPlayerBar() {
         const barreRouge = document.createElement('div');
         barreRouge.id = 'barreRouge';
@@ -738,12 +755,15 @@ class Interface {
 
     onClickEvent(x, y, jeu) {
         return function () {
+            //console.log(`buffer value : ${this.buffer}`);
+            //jeu.eteintPlateau();
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
                 if (pionChoisi.getType() != jeu.getTour()){
                     console.log(this.buffer);
-                    if (this.buffer && pionChoisi === this.buffer.pionVoisin(this.buffer.getDirection())){
+                    if (this.readyToPush(pionChoisi)){
+                        //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
                         this.MovementProcedure(false);
                         this.buffer = null;
@@ -755,18 +775,27 @@ class Interface {
                 jeu.eteintPlateau();
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
+                //console.log(`Buffer set to ${this.buffer}`);
                 return;
             }
             if (caseChoisie.getAccessible()){
                 if (!this.buffer){
                     alert(`onClickEvent() : buffer is ${this.buffer}`)
                 }
+                //Le joueur se déplace sur une case non adjacente.
                 this.buffer.deplacePion(caseChoisie, false);
                 this.MovementProcedure(true);
                 this.buffer = null;
                 return;
             }
         }.bind(this);
+    }
+
+    readyToPush(pionChoisi){
+        if (!this.buffer)return false; 
+        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;
+        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;
+        return true;
     }
 
     playerFriendlyLanguage(tour){
@@ -792,6 +821,7 @@ class Interface {
 }
 
 function gatherFromTableCases(x,y){
+    //Récupère la case de coordonnées (x,y) dans tablecases.
     var index = x+7*y;
     return tableCases[index];
 }

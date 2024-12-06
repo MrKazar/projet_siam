@@ -75,4 +75,8 @@ body {
     height: 100%;
     object-fit: contain;
     pointer-events: none; /* Évite d'intercepter les clics sur les images */
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 4c4e064e57dcee03e5d8f6838534a78d19b0983e
