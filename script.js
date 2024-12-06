@@ -653,6 +653,9 @@ class Jeu{
 
     askForRotation(pionChoisi){
         //Propose au joueur de tourner sa pièce.
+        if (!pionChoisi.position.enJeu()){
+            return;
+        }
         this.aff.openRotationPopUp((sens) => this.handleRotation(sens, pionChoisi));
     }
 
@@ -663,6 +666,57 @@ class Jeu{
 
     incrementeTimer(){
         this.timer ++;
+    }
+
+    reserve(type){
+        if (type == "ryno")return tableCases.slice(1,6);
+        if (type == "ele")return tableCases.slice(43,48);
+        alert("reserve() : issue")
+    }
+
+    neant(){
+        return tableCases.filter(elt => {return !elt.enJeu() && !this.reserve("ryno").includes(elt) && !this.reserve("ele").includes(elt)});
+    }
+
+    everyoneBackHome(){
+        var neant = this.neant();
+        var platCase;
+        var targetsList = neant.filter(elt => {return !elt.estVide()})
+        for (platCase of targetsList){
+            console.log(`Jeu.everyoneBackHome() : platCase is ${platCase}`);
+            this.pionBackHome(platCase.getContenu());
+        }
+    }
+
+    findHome(type){
+        //Retourne une case disponible dans la réserve du type donné.
+        var reserve = this.reserve(type);
+        var home = reserve.filter(elt => {return elt.estVide()});
+        if (home.length === 0){
+            alert("Jeu.findHome() : la réserve est pleine !");
+        }
+        return home[0];
+    }
+
+    pionBackHome(pion){
+        //Renvoie un pion dans sa réserve.
+        var destiCase = this.findHome(pion.getType());
+        console.log(`Jeu.pionBackHome() : destiCase is ${destiCase}`);
+        pion.deplacePion(destiCase,true);
+    }
+
+    setDirectionInReserve(){
+        var elt;
+        for (elt of this.reserve("ryno")){
+            if (!elt.estVide()){
+                elt.getContenu().setDirection("bas");
+            }
+        }
+        for (elt of this.reserve("ele")){
+            if (!elt.estVide()){
+                elt.getContenu().setDirection("haut");
+            }
+        }
     }
 
 
@@ -743,14 +797,11 @@ class Interface {
                     if (this.buffer){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
-                        this.jeu.updatePlateau();
-                        this.jeu.changerDeTour();
-                        this.jeu.eteintPlateau();
-                        this.incrementeTimer();
+                        this.MovementProcedure(false);
                         this.buffer = null;
                         return;
                     }
-                    alert(`onClickEvent() : c'est le tour des ${jeu.getTour()} !`);
+                    alert(`C'est le tour des ${this.playerFriendlyLanguage(jeu.getTour())} !`);
                     return;
                 }
                 jeu.eteintPlateau();///////////
@@ -765,16 +816,33 @@ class Interface {
                 }
                 //Le joueur se déplace sur une case non adjacente.
                 this.buffer.deplacePion(caseChoisie, false);
-                this.jeu.askForRotation(this.buffer);
-                this.jeu.updatePlateau();
-                this.jeu.changerDeTour();
-                this.jeu.eteintPlateau();
-                this.jeu.incrementeTimer();
+                this.MovementProcedure(true);
                 this.buffer = null;
                 return;
             }
         }.bind(this);
     }
+
+    playerFriendlyLanguage(tour){
+        switch(tour){
+            case "ele": return "éléphants"
+            case "ryno": return "rhynocéros"
+            default: alert("wtf");return;
+        }
+    }
+
+    MovementProcedure(askForRotation){
+        //Appelée après un déplacement, prend en charge la mise a jour du plateau.
+        //console.log("scoubidou");
+        this.jeu.everyoneBackHome();
+        this.jeu.setDirectionInReserve();
+        if (askForRotation)this.jeu.askForRotation(this.buffer);
+        this.jeu.updatePlateau();
+        this.jeu.changerDeTour();
+        this.jeu.eteintPlateau();
+        this.jeu.incrementeTimer();
+    }
+
 }
 
 function gatherFromTableCases(x,y){
