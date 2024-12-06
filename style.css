@@ -31,7 +31,6 @@ body {
     height: 90vmin;
     max-width: 400px; 
     max-height: 400px;
-    background-image: url("img_siam/plateauSiam.jpg");
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -70,13 +69,3 @@ body {
     background-color: rgba(209, 231, 221, 0.8);
 }
 
-.pion {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none; /* Évite d'intercepter les clics sur les images */
-<<<<<<< HEAD
-}
-=======
-}
->>>>>>> 4c4e064e57dcee03e5d8f6838534a78d19b0983e
