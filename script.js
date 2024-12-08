@@ -355,7 +355,7 @@ class Affichage{
             if (platCase.getAccessible()){
                 platCase.getDiv().style.backgroundColor = couleur;
             }
-            else if (platCase.estVide()){
+            else {
                 //console.log("une case inaccesible à été assombrie.");
                 platCase.getDiv().style.backgroundColor = "transparent";
             }
@@ -576,12 +576,16 @@ class Jeu{
         //Donne à toutes les cases sur la circonférence de la zone de jeu le statut "accessible"
         //Exeption : la règle du jeu spécifie que tant que trois tours de jeu n'ont pas eu lieu, les cases sur la colonne centrale sont interdites.
         var i;
+        var circonference = new Array();
+        var targetsList;
         for (i=0;i<5;i++){
-            tableCases[8+i].setAccessible(true);
-            tableCases[tableCases.length-(8+i)-1].setAccessible(true);
-            tableCases[8+7*i].setAccessible(true);
-            tableCases[tableCases.length-(8+7*i)-1].setAccessible(true);
+            circonference.push(tableCases[8+i]);
+            circonference.push(tableCases[tableCases.length-(8+i)-1]);
+            circonference.push(tableCases[8+7*i]);
+            circonference.push(tableCases[tableCases.length-(8+7*i)-1]);
         }
+        targetsList = circonference.filter(elt => {return elt.estVide();});
+        targetsList.forEach(elt => {elt.setAccessible(true);});
         if (this.timer < 3){
             tableCases[10].setAccessible(false);
             tableCases[tableCases.length - 1 - 10].setAccessible(false);
@@ -657,10 +661,20 @@ class Jeu{
         return tableCases.filter(elt => {return !elt.enJeu() && !this.reserve("ryno").includes(elt) && !this.reserve("ele").includes(elt)});
     }
 
+    wrongReserve(){
+        //Parfois, il peut arriver qu'un pion qu'on pousse arrive dans la réserve adverse, il faut les renvoyer dans leur propre réserve.
+        var targetsList = tableCases.filter(elt => {return !elt.estVide()});
+        return targetsList.filter(elt => (this.reserve("ryno").includes(elt) && elt.getContenu().getType() !== "ryno") || (this.reserve("ele").includes(elt) && elt.getContenu().getType() !== "ele"));
+    }
+
     everyoneBackHome(){
         var neant = this.neant();
         var platCase;
-        var targetsList = neant.filter(elt => {return !elt.estVide()})
+        var targetsList = this.wrongReserve();
+        for (platCase of targetsList){
+            this.pionBackHome(platCase.getContenu());
+        }
+        targetsList = neant.filter(elt => {return !elt.estVide()})
         for (platCase of targetsList){
             console.log(`Jeu.everyoneBackHome() : platCase is ${platCase}`);
             this.pionBackHome(platCase.getContenu());
@@ -760,8 +774,9 @@ class Interface {
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
-                if (pionChoisi.getType() != jeu.getTour()){
-                    console.log(this.buffer);
+                // Le joueur n'a pas appuyé sur une case vide.
+                if (caseChoisie.getAccessible()){//pionChoisi.getType() != jeu.getTour()
+                    // console.log(this.buffer);
                     if (this.readyToPush(pionChoisi)){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
