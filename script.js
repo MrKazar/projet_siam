@@ -148,6 +148,9 @@ class Pion{
     rapportDeForce(sens,res=1){
         //Parcourt récurcivement une rangée en incrémentant res de 1 lorsqu'on rencontre une pièce orientée dans notre sens et -1 si on rencontre une pièce qui fait face.
         //Si on atteint une case vide où hors jeu, retourne true. Si res vaut 0, retourne immédiatement false.
+        if (this.getType() == "rocher" && !this.position.caseVoisine(sens).enJeu()){
+            this.retropedalage(sens);
+        }
         if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
         if (!voisin)return true;
@@ -167,7 +170,7 @@ class Pion{
 
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
-        console.log("PeutPousser() : a été appelé.");
+        //console.log("PeutPousser() : a été appelé.");
         if (!this.position.caseVoisine(sens).enJeu()){
             //On est au bord du plateau, on peut donc pousser.
             return true;
@@ -186,6 +189,24 @@ class Pion{
         console.log(rocher);
         return (this.rapportDeForce(sens) && ami >= rocher);
     }
+
+    retropedalage(sens){
+        //Un rocher est sur le point de sortir !!!
+        //Il faut aller voir qui est la pièce la plus proche à être orienté vers la sortie, c'est son type qui est gagnant.
+        var pionCourant = this.pionVoisin(this.oppose(sens));
+        while (pionCourant.getDirection() !== sens){
+            pionCourant = pionCourant.pionVoisin(this.oppose(sens));
+        }
+        pionCourant.poussePion(this.oppose(sens));
+        if (pionCourant.getType() == "ele"){
+            alert("La partie fut mouvementée, mais les braves éléphants en sortirent vainqueurs.");
+        }
+        else alert("Après moultes péripéties, les rhinocéros triomphèrent.");
+        alert("Cependant, leurs adversaires, inflexibles, revinrent, leur détermination doublée. Et ainsi se poursuivit l'éternelle histoire de Siam.");
+        alert("Game Over");
+        window.location.reload();
+    }
+
 
     poussePion(sens){
         //Fonction récursive qui permet de pousser une rangée à partir du pion this.
@@ -356,7 +377,7 @@ class Affichage{
         switch (tour){
             case "ele": couleur="rgba(0,0,255,0.5)";break;
             case "ryno": couleur="rgba(255,0,0,0.5)";break;
-            default : alert("alright something is not working.");return;
+            default : alert("affichePossibilites() : argument de type inconnu ??");return;
         }
         for (platCase of tableCases){
             if (platCase.getAccessible()){
@@ -628,7 +649,7 @@ class Jeu{
         }
         //alert("allumons les possibilités");
         var caseAccessible;
-        if (!pionChoisi){alert("Bro 'pion' was never real");}
+        if (!pionChoisi){alert("allumePossibilites() : pionChoisi doesn't exist apparently.");}
         if (!pionChoisi.position.enJeu()){
             this.allumeCirconference();
             this.aff.affichePossibilites(this.tour);
@@ -701,7 +722,8 @@ class Jeu{
     pionBackHome(pion){
         //Renvoie un pion dans sa réserve.
         if (pion.getType() == "rocher"){
-            alert("Condition de victoire atteinte !!");
+            alert("pionBackHome() : condition de victoire atteinte.")
+            return;
         }
         var destiCase = this.findHome(pion.getType());
         console.log(`Jeu.pionBackHome() : destiCase is ${destiCase}`);
@@ -849,4 +871,4 @@ function gatherFromTableCases(x,y){
     return tableCases[index];
 }
 
-inter = new Interface();
+var inter = new Interface();
