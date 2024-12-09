@@ -151,6 +151,7 @@ class Pion{
         if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
         if (!voisin)return true;
+        if (!voisin.position.enJeu())return true;//Le pièces hors plateau sont intengibles.
         if (voisin.getDirection() == sens)return voisin.rapportDeForce(sens,res+1);
         if (voisin.getDirection() == this.oppose(sens))return voisin.rapportDeForce(sens,res-1);
         return voisin.rapportDeForce(sens,res);
@@ -168,8 +169,8 @@ class Pion{
         //Détermine si on peut pousser dans une direction.
         console.log("PeutPousser() : a été appelé.");
         if (!this.position.caseVoisine(sens).enJeu()){
-            //On est au bord du plateau, on ne peut donc pas pousser.
-            return true;//////////////
+            //On est au bord du plateau, on peut donc pousser.
+            return true;
         }
         if (!this.pionVoisin(sens)){
             //Pas de voisin, donc on peut pousser
@@ -195,13 +196,19 @@ class Pion{
             this.deplacePion(target , true);
             return
         }
+        if (!voisin.position.enJeu()){
+            //Cette condition n'est vraie que lorsqu'un pion situé dans la réserve fait obstruction à la poussée.
+            //Dans ce cas, le pion courant est temporairement placé dans une case inutile dans le coin du plateau.
+            //alert("poussePion() : contournement par le néant");
+            this.deplacePion(tableCases[0],true);
+            return;
+        }
         voisin.poussePion(sens);
         this.deplacePion(target , true);
     }
 
     deplacePion(destiCase , byForce){
         //Déplace directement le pion pour le placer sur destiCase.
-        //
         if (!destiCase.getAccessible() && !byForce){
             alert("Déplacement illégal détecté.");
             return;
@@ -616,7 +623,7 @@ class Jeu{
     allumePossibilites(pionChoisi){
         //Le joueur a choisi un Pion, montrons lui où il est possible de le déplacer.
         if (pionChoisi.type !== this.tour){
-            alert(`Pas touche ! C'est le tour des ${this.tour}`);
+            alert(`C'est le tour des ${this.playerFriendlyLanguage(this.tour)} !`);
             return;
         }
         //alert("allumons les possibilités");
@@ -715,6 +722,15 @@ class Jeu{
         }
     }
 
+    playerFriendlyLanguage(tour){
+        switch(tour){
+            case "ele": return "éléphants"
+            case "ryno": return "rhynocéros"
+            default: alert("wtf");return;
+        }
+    }
+
+
 
 
 }
@@ -769,14 +785,16 @@ class Interface {
 
     onClickEvent(x, y, jeu) {
         return function () {
-            //console.log(`buffer value : ${this.buffer}`);
-            //jeu.eteintPlateau();
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
                 // Le joueur n'a pas appuyé sur une case vide.
-                if (caseChoisie.getAccessible()){//pionChoisi.getType() != jeu.getTour()
-                    // console.log(this.buffer);
+                if (pionChoisi === this.buffer){
+                    // Le joueur a appuyé deux fois de suite sur la même pièce, il veut donc tourner sans bouger.
+                    this.MovementProcedure(true);
+                    return;
+                }
+                if (caseChoisie.getAccessible()){
                     if (this.readyToPush(pionChoisi)){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
@@ -784,20 +802,19 @@ class Interface {
                         this.buffer = null;
                         return;
                     }
-                    alert(`C'est le tour des ${this.playerFriendlyLanguage(jeu.getTour())} !`);
+                    alert("onClickEvent(): weird occurence")
                     return;
                 }
                 jeu.eteintPlateau();
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
-                //console.log(`Buffer set to ${this.buffer}`);
                 return;
             }
             if (caseChoisie.getAccessible()){
                 if (!this.buffer){
                     alert(`onClickEvent() : buffer is ${this.buffer}`)
                 }
-                //Le joueur se déplace sur une case non adjacente.
+                //Le joueur se déplace sans pousser.
                 this.buffer.deplacePion(caseChoisie, false);
                 this.MovementProcedure(true);
                 this.buffer = null;
@@ -807,23 +824,14 @@ class Interface {
     }
 
     readyToPush(pionChoisi){
-        if (!this.buffer)return false; 
-        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;
-        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;
+        if (!this.buffer)return false;//On ne peut pas pousser si le joueur n'a pas clairement indiqué ce qu'il veut faire.
+        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;//On ne peut pas pousser un pion qui n'est pas notre voisin.
+        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;//On ne peut pas pousser si la pièce n'est pas assez forte.
         return true;
-    }
-
-    playerFriendlyLanguage(tour){
-        switch(tour){
-            case "ele": return "éléphants"
-            case "ryno": return "rhynocéros"
-            default: alert("wtf");return;
-        }
     }
 
     MovementProcedure(askForRotation){
         //Appelée après un déplacement, prend en charge la mise a jour du plateau.
-        //console.log("scoubidou");
         this.jeu.everyoneBackHome();
         this.jeu.setDirectionInReserve();
         if (askForRotation)this.jeu.askForRotation(this.buffer);
