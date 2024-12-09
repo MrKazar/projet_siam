@@ -148,9 +148,13 @@ class Pion{
     rapportDeForce(sens,res=1){
         //Parcourt récurcivement une rangée en incrémentant res de 1 lorsqu'on rencontre une pièce orientée dans notre sens et -1 si on rencontre une pièce qui fait face.
         //Si on atteint une case vide où hors jeu, retourne true. Si res vaut 0, retourne immédiatement false.
+        if (this.getType() == "rocher" && !this.position.caseVoisine(sens).enJeu()){
+            this.retropedalage(sens);
+        }
         if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
         if (!voisin)return true;
+        if (!voisin.position.enJeu())return true;//Le pièces hors plateau sont intengibles.
         if (voisin.getDirection() == sens)return voisin.rapportDeForce(sens,res+1);
         if (voisin.getDirection() == this.oppose(sens))return voisin.rapportDeForce(sens,res-1);
         return voisin.rapportDeForce(sens,res);
@@ -166,10 +170,10 @@ class Pion{
 
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
-        console.log("PeutPousser() : a été appelé.");
+        //console.log("PeutPousser() : a été appelé.");
         if (!this.position.caseVoisine(sens).enJeu()){
-            //On est au bord du plateau, on ne peut donc pas pousser.
-            return true;//////////////
+            //On est au bord du plateau, on peut donc pousser.
+            return true;
         }
         if (!this.pionVoisin(sens)){
             //Pas de voisin, donc on peut pousser
@@ -186,6 +190,24 @@ class Pion{
         return (this.rapportDeForce(sens) && ami >= rocher);
     }
 
+    retropedalage(sens){
+        //Un rocher est sur le point de sortir !!!
+        //Il faut aller voir qui est la pièce la plus proche à être orienté vers la sortie, c'est son type qui est gagnant.
+        var pionCourant = this.pionVoisin(this.oppose(sens));
+        while (pionCourant.getDirection() !== sens){
+            pionCourant = pionCourant.pionVoisin(this.oppose(sens));
+        }
+        pionCourant.poussePion(this.oppose(sens));
+        if (pionCourant.getType() == "ele"){
+            alert("La partie fut mouvementée, mais les braves éléphants en sortirent vainqueurs.");
+        }
+        else alert("Après moultes péripéties, les rhinocéros triomphèrent.");
+        alert("Cependant, leurs adversaires, inflexibles, revinrent, leur détermination doublée. Et ainsi se poursuivit l'éternelle histoire de Siam.");
+        alert("Game Over");
+        window.location.reload();
+    }
+
+
     poussePion(sens){
         //Fonction récursive qui permet de pousser une rangée à partir du pion this.
         var target = this.position.caseVoisine(sens);
@@ -195,13 +217,19 @@ class Pion{
             this.deplacePion(target , true);
             return
         }
+        if (!voisin.position.enJeu()){
+            //Cette condition n'est vraie que lorsqu'un pion situé dans la réserve fait obstruction à la poussée.
+            //Dans ce cas, le pion courant est temporairement placé dans une case inutile dans le coin du plateau.
+            //alert("poussePion() : contournement par le néant");
+            this.deplacePion(tableCases[0],true);
+            return;
+        }
         voisin.poussePion(sens);
         this.deplacePion(target , true);
     }
 
     deplacePion(destiCase , byForce){
         //Déplace directement le pion pour le placer sur destiCase.
-        //
         if (!destiCase.getAccessible() && !byForce){
             alert("Déplacement illégal détecté.");
             return;
@@ -349,13 +377,13 @@ class Affichage{
         switch (tour){
             case "ele": couleur="rgba(0,0,255,0.5)";break;
             case "ryno": couleur="rgba(255,0,0,0.5)";break;
-            default : alert("alright something is not working.");return;
+            default : alert("affichePossibilites() : argument de type inconnu ??");return;
         }
         for (platCase of tableCases){
             if (platCase.getAccessible()){
                 platCase.getDiv().style.backgroundColor = couleur;
             }
-            else if (platCase.estVide()){
+            else {
                 //console.log("une case inaccesible à été assombrie.");
                 platCase.getDiv().style.backgroundColor = "transparent";
             }
@@ -400,7 +428,7 @@ class Affichage{
         popUp.style.zIndex = "11";
         popUp.style.width = "80vmin";
         popUp.style.maxWidth = "350px";
-        popUp.style.backgroundColor = "white";
+        popUp.style.backgroundColor = "#1e8a13";
         popUp.style.padding = "20px";
         popUp.style.borderRadius = "10px";
         popUp.style.textAlign = "center";
@@ -408,7 +436,7 @@ class Affichage{
         const text = document.createElement("h2");
         text.textContent = "Dans quelle direction faut-il orienter la pièce ?";
         text.style.marginBottom = "20px";
-        text.style.color = "#333";
+        text.style.color = "white";
         popUp.appendChild(text);
     
         const buttonContainer = document.createElement("div");
@@ -425,7 +453,7 @@ class Affichage{
             btn.textContent = direction;
     
             btn.style.padding = "10px";
-            btn.style.border = "1px solid rgba(255,128,0)";
+            btn.style.border = "2px solid #da4222";
             btn.style.borderRadius = "5px";
             btn.style.backgroundColor = "#f7f7f7";
             btn.style.color = "#333";
@@ -435,16 +463,16 @@ class Affichage{
             btn.addEventListener("click", (event) => {
                 event.preventDefault();
                 if (selectedButton) {
-                    selectedButton.style.border = "1px solid #ccc";
+                    selectedButton.style.border = "1px solid #da4222";
                     selectedButton.style.backgroundColor = "#f7f7f7";
                     selectedButton.style.color = "#333";
                     selectedButton.style.transform = "none";
                     selectedButton.style.boxShadow = "none";
                 }
                 selectedButton = btn;
-                btn.style.border = "2px solid rgba(255,128,0)";
+                btn.style.border = "2px solid #da4222";
                 btn.style.backgroundColor = "#e6f7ff";
-                btn.style.color = "rgba(255,128,0)";
+                btn.style.color = "#da4222";
                 btn.style.transform = "scale(1.1)";
             });
     
@@ -460,7 +488,7 @@ class Affichage{
         submit.type = "submit";
         submit.textContent = "C'est parti";
         submit.style.padding = "10px 20px";
-        submit.style.backgroundColor = "rgba(255,128,0)";
+        submit.style.backgroundColor = "#da4222";
         submit.style.color = "white";
         submit.style.border = "none";
         submit.style.borderRadius = "5px";
@@ -576,12 +604,16 @@ class Jeu{
         //Donne à toutes les cases sur la circonférence de la zone de jeu le statut "accessible"
         //Exeption : la règle du jeu spécifie que tant que trois tours de jeu n'ont pas eu lieu, les cases sur la colonne centrale sont interdites.
         var i;
+        var circonference = new Array();
+        var targetsList;
         for (i=0;i<5;i++){
-            tableCases[8+i].setAccessible(true);
-            tableCases[tableCases.length-(8+i)-1].setAccessible(true);
-            tableCases[8+7*i].setAccessible(true);
-            tableCases[tableCases.length-(8+7*i)-1].setAccessible(true);
+            circonference.push(tableCases[8+i]);
+            circonference.push(tableCases[tableCases.length-(8+i)-1]);
+            circonference.push(tableCases[8+7*i]);
+            circonference.push(tableCases[tableCases.length-(8+7*i)-1]);
         }
+        targetsList = circonference.filter(elt => {return elt.estVide();});
+        targetsList.forEach(elt => {elt.setAccessible(true);});
         if (this.timer < 3){
             tableCases[10].setAccessible(false);
             tableCases[tableCases.length - 1 - 10].setAccessible(false);
@@ -612,12 +644,12 @@ class Jeu{
     allumePossibilites(pionChoisi){
         //Le joueur a choisi un Pion, montrons lui où il est possible de le déplacer.
         if (pionChoisi.type !== this.tour){
-            alert(`Pas touche ! C'est le tour des ${this.tour}`);
+            alert(`C'est le tour des ${this.playerFriendlyLanguage(this.tour)} !`);
             return;
         }
         //alert("allumons les possibilités");
         var caseAccessible;
-        if (!pionChoisi){alert("Bro 'pion' was never real");}
+        if (!pionChoisi){alert("allumePossibilites() : pionChoisi doesn't exist apparently.");}
         if (!pionChoisi.position.enJeu()){
             this.allumeCirconference();
             this.aff.affichePossibilites(this.tour);
@@ -657,10 +689,20 @@ class Jeu{
         return tableCases.filter(elt => {return !elt.enJeu() && !this.reserve("ryno").includes(elt) && !this.reserve("ele").includes(elt)});
     }
 
+    wrongReserve(){
+        //Parfois, il peut arriver qu'un pion qu'on pousse arrive dans la réserve adverse, il faut les renvoyer dans leur propre réserve.
+        var targetsList = tableCases.filter(elt => {return !elt.estVide()});
+        return targetsList.filter(elt => (this.reserve("ryno").includes(elt) && elt.getContenu().getType() !== "ryno") || (this.reserve("ele").includes(elt) && elt.getContenu().getType() !== "ele"));
+    }
+
     everyoneBackHome(){
         var neant = this.neant();
         var platCase;
-        var targetsList = neant.filter(elt => {return !elt.estVide()})
+        var targetsList = this.wrongReserve();
+        for (platCase of targetsList){
+            this.pionBackHome(platCase.getContenu());
+        }
+        targetsList = neant.filter(elt => {return !elt.estVide()})
         for (platCase of targetsList){
             console.log(`Jeu.everyoneBackHome() : platCase is ${platCase}`);
             this.pionBackHome(platCase.getContenu());
@@ -680,7 +722,8 @@ class Jeu{
     pionBackHome(pion){
         //Renvoie un pion dans sa réserve.
         if (pion.getType() == "rocher"){
-            alert("Condition de victoire atteinte !!");
+            alert("pionBackHome() : condition de victoire atteinte.")
+            return;
         }
         var destiCase = this.findHome(pion.getType());
         console.log(`Jeu.pionBackHome() : destiCase is ${destiCase}`);
@@ -701,6 +744,15 @@ class Jeu{
         }
     }
 
+    playerFriendlyLanguage(tour){
+        switch(tour){
+            case "ele": return "éléphants"
+            case "ryno": return "rhynocéros"
+            default: alert("wtf");return;
+        }
+    }
+
+
 
 
 }
@@ -716,7 +768,9 @@ class Interface {
         
         // Ajout de la barre en haut de l'écran
         this.addPlayerBar();
-        
+        this.creerBoutonRegles();
+
+        // Ajout des clics sur les cases
         var x;
         var y;
         var i;
@@ -728,6 +782,96 @@ class Interface {
         }
     }
 
+    creerBoutonRegles() {
+        const boutonRegles = document.createElement('div');
+        boutonRegles.style.position = 'fixed';
+        boutonRegles.style.left = '0';
+        boutonRegles.style.width = '20px';
+        boutonRegles.style.height = '10vh';
+        boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        boutonRegles.style.color = 'white';
+        boutonRegles.style.fontSize = '24px';
+        boutonRegles.style.textAlign = 'center';
+        boutonRegles.style.padding = '20px';
+        boutonRegles.style.borderTopRightRadius = '10px';
+        boutonRegles.style.borderBottomRightRadius = '10px';
+        boutonRegles.style.writingMode = 'vertical-rl'; 
+        boutonRegles.style.cursor = 'pointer';
+        boutonRegles.style.transition = 'all 0.2s ease-in-out';
+        
+        const texteRegles = document.createElement('span');
+        texteRegles.textContent = 'Regles';
+        texteRegles.style.display = 'block';
+        
+        boutonRegles.appendChild(texteRegles);
+
+        boutonRegles.addEventListener('mouseover', () => {
+            boutonRegles.style.width = '25px';
+            boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        });
+        
+          boutonRegles.addEventListener('mouseout', () => {
+            boutonRegles.style.width = '20px';
+            boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        });
+        let reglesDiv = null;
+
+        boutonRegles.addEventListener('click', () => {
+            if (reglesDiv === null) {
+                reglesDiv = document.createElement('div');
+                reglesDiv.style.position = 'fixed';
+                reglesDiv.style.top = '50%';
+                reglesDiv.style.left = '50%';
+                reglesDiv.style.transform = 'translate(-50%, -50%)';
+                reglesDiv.style.backgroundColor = 'rgba(0, 100, 0, 0.8)';
+                reglesDiv.style.width = '78vw';
+                reglesDiv.style.height = '43vh';
+                reglesDiv.style.maxWidth = '358px';
+                reglesDiv.style.maxHeight = '568px';
+                reglesDiv.style.overflowY = 'auto';
+                reglesDiv.style.overflowX = 'hidden';
+                reglesDiv.style.padding = '20px';
+                reglesDiv.style.border = '1px solid black';
+                reglesDiv.style.color = 'white';
+                reglesDiv.style.zIndex = '9999';
+
+                const texteRegles = document.createElement('p');
+                texteRegles.innerHTML = `
+                    <h2>Règles du jeu</h2>
+                    <p>Siam est un jeu de stratégie pour deux joueurs où l'objectif est de pousser une montagne hors du plateau en utilisant des pions. Voici les mécanismes principaux :</p>
+                    <h3>Sélection et déplacement d'un pion :</h3>
+                    <p>Clique sur un pion pour voir les déplacements possibles (indiqués par des cases bleues ou rouges).</p>
+                    <p>Clique sur une case bleue ou rouge pour déplacer le pion à cet endroit.</p>
+                    <h3>Rotation d'un pion :</h3>
+                    <p>Clique une seconde fois sur ton pion pour le faire pivoter et changer sa direction. Cela permet d’orienter le pion pour mieux pousser ou bloquer.</p>
+                    <h3>Utilisation d’un pion de la réserve :</h3>
+                    <p>Si tu ne souhaites pas jouer un coup, clique deux fois sur un pion de la réserve pour passer ton tour.</p>
+                    <h3>Objectif :</h3>
+                    <p>Pousse une montagne hors du plateau pour gagner, tout en anticipant et bloquant les mouvements de ton adversaire.</p>
+                    <p>Ce jeu mêle réflexion, stratégie et anticipation, parfait pour les amateurs de défis tactiques !</p>
+                `;
+
+                reglesDiv.appendChild(texteRegles);
+
+                reglesDiv.addEventListener('click', (event) => {
+                    if (event.target === reglesDiv) {
+                        reglesDiv.remove();
+                        reglesDiv = null;
+                    }
+                });
+
+                document.body.appendChild(reglesDiv);
+            } else {
+                reglesDiv.remove();
+                reglesDiv = null;
+            }
+
+            document.body.appendChild(reglesDiv);
+        });
+        
+        document.body.appendChild(boutonRegles);
+    }
+    
     // Fonction pour ajouter la barre des joueurs
     addPlayerBar() {
         const barreRouge = document.createElement('div');
@@ -755,13 +899,16 @@ class Interface {
 
     onClickEvent(x, y, jeu) {
         return function () {
-            //console.log(`buffer value : ${this.buffer}`);
-            //jeu.eteintPlateau();
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
-                if (pionChoisi.getType() != jeu.getTour()){
-                    console.log(this.buffer);
+                // Le joueur n'a pas appuyé sur une case vide.
+                if (pionChoisi === this.buffer){
+                    // Le joueur a appuyé deux fois de suite sur la même pièce, il veut donc tourner sans bouger.
+                    this.MovementProcedure(true);
+                    return;
+                }
+                if (caseChoisie.getAccessible()){
                     if (this.readyToPush(pionChoisi)){
                         //Le joueur souhaite pousser une rangée.
                         this.buffer.poussePion(this.buffer.getDirection());
@@ -769,20 +916,19 @@ class Interface {
                         this.buffer = null;
                         return;
                     }
-                    alert(`C'est le tour des ${this.playerFriendlyLanguage(jeu.getTour())} !`);
+                    alert("onClickEvent(): weird occurence")
                     return;
                 }
                 jeu.eteintPlateau();
                 jeu.allumePossibilites(pionChoisi);
                 this.buffer = pionChoisi;
-                //console.log(`Buffer set to ${this.buffer}`);
                 return;
             }
             if (caseChoisie.getAccessible()){
                 if (!this.buffer){
                     alert(`onClickEvent() : buffer is ${this.buffer}`)
                 }
-                //Le joueur se déplace sur une case non adjacente.
+                //Le joueur se déplace sans pousser.
                 this.buffer.deplacePion(caseChoisie, false);
                 this.MovementProcedure(true);
                 this.buffer = null;
@@ -792,23 +938,14 @@ class Interface {
     }
 
     readyToPush(pionChoisi){
-        if (!this.buffer)return false; 
-        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;
-        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;
+        if (!this.buffer)return false;//On ne peut pas pousser si le joueur n'a pas clairement indiqué ce qu'il veut faire.
+        if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;//On ne peut pas pousser un pion qui n'est pas notre voisin.
+        if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;//On ne peut pas pousser si la pièce n'est pas assez forte.
         return true;
-    }
-
-    playerFriendlyLanguage(tour){
-        switch(tour){
-            case "ele": return "éléphants"
-            case "ryno": return "rhynocéros"
-            default: alert("wtf");return;
-        }
     }
 
     MovementProcedure(askForRotation){
         //Appelée après un déplacement, prend en charge la mise a jour du plateau.
-        //console.log("scoubidou");
         this.jeu.everyoneBackHome();
         this.jeu.setDirectionInReserve();
         if (askForRotation)this.jeu.askForRotation(this.buffer);
@@ -826,4 +963,4 @@ function gatherFromTableCases(x,y){
     return tableCases[index];
 }
 
-inter = new Interface();
+var inter = new Interface();
