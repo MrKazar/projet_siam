@@ -620,6 +620,8 @@ class Jeu{
         }
     }
 
+    
+
     changerDeTour() {
         if (this.tour === "ele") {
             this.tour = "ryno";
