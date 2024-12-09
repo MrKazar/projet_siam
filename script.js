@@ -428,7 +428,7 @@ class Affichage{
         popUp.style.zIndex = "11";
         popUp.style.width = "80vmin";
         popUp.style.maxWidth = "350px";
-        popUp.style.backgroundColor = "white";
+        popUp.style.backgroundColor = "#1e8a13";
         popUp.style.padding = "20px";
         popUp.style.borderRadius = "10px";
         popUp.style.textAlign = "center";
@@ -436,7 +436,7 @@ class Affichage{
         const text = document.createElement("h2");
         text.textContent = "Dans quelle direction faut-il orienter la pièce ?";
         text.style.marginBottom = "20px";
-        text.style.color = "#333";
+        text.style.color = "white";
         popUp.appendChild(text);
     
         const buttonContainer = document.createElement("div");
@@ -453,7 +453,7 @@ class Affichage{
             btn.textContent = direction;
     
             btn.style.padding = "10px";
-            btn.style.border = "1px solid rgba(255,128,0)";
+            btn.style.border = "2px solid #da4222";
             btn.style.borderRadius = "5px";
             btn.style.backgroundColor = "#f7f7f7";
             btn.style.color = "#333";
@@ -463,16 +463,16 @@ class Affichage{
             btn.addEventListener("click", (event) => {
                 event.preventDefault();
                 if (selectedButton) {
-                    selectedButton.style.border = "1px solid #ccc";
+                    selectedButton.style.border = "1px solid #da4222";
                     selectedButton.style.backgroundColor = "#f7f7f7";
                     selectedButton.style.color = "#333";
                     selectedButton.style.transform = "none";
                     selectedButton.style.boxShadow = "none";
                 }
                 selectedButton = btn;
-                btn.style.border = "2px solid rgba(255,128,0)";
+                btn.style.border = "2px solid #da4222";
                 btn.style.backgroundColor = "#e6f7ff";
-                btn.style.color = "rgba(255,128,0)";
+                btn.style.color = "#da4222";
                 btn.style.transform = "scale(1.1)";
             });
     
@@ -488,7 +488,7 @@ class Affichage{
         submit.type = "submit";
         submit.textContent = "C'est parti";
         submit.style.padding = "10px 20px";
-        submit.style.backgroundColor = "rgba(255,128,0)";
+        submit.style.backgroundColor = "#da4222";
         submit.style.color = "white";
         submit.style.border = "none";
         submit.style.borderRadius = "5px";
@@ -770,7 +770,9 @@ class Interface {
         
         // Ajout de la barre en haut de l'écran
         this.addPlayerBar();
-        
+        this.creerBoutonRegles();
+
+        // Ajout des clics sur les cases
         var x;
         var y;
         var i;
@@ -782,6 +784,96 @@ class Interface {
         }
     }
 
+    creerBoutonRegles() {
+        const boutonRegles = document.createElement('div');
+        boutonRegles.style.position = 'fixed';
+        boutonRegles.style.left = '0';
+        boutonRegles.style.width = '20px';
+        boutonRegles.style.height = '10vh';
+        boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        boutonRegles.style.color = 'white';
+        boutonRegles.style.fontSize = '24px';
+        boutonRegles.style.textAlign = 'center';
+        boutonRegles.style.padding = '20px';
+        boutonRegles.style.borderTopRightRadius = '10px';
+        boutonRegles.style.borderBottomRightRadius = '10px';
+        boutonRegles.style.writingMode = 'vertical-rl'; 
+        boutonRegles.style.cursor = 'pointer';
+        boutonRegles.style.transition = 'all 0.2s ease-in-out';
+        
+        const texteRegles = document.createElement('span');
+        texteRegles.textContent = 'Regles';
+        texteRegles.style.display = 'block';
+        
+        boutonRegles.appendChild(texteRegles);
+
+        boutonRegles.addEventListener('mouseover', () => {
+            boutonRegles.style.width = '25px';
+            boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        });
+        
+          boutonRegles.addEventListener('mouseout', () => {
+            boutonRegles.style.width = '20px';
+            boutonRegles.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        });
+        let reglesDiv = null;
+
+        boutonRegles.addEventListener('click', () => {
+            if (reglesDiv === null) {
+                reglesDiv = document.createElement('div');
+                reglesDiv.style.position = 'fixed';
+                reglesDiv.style.top = '50%';
+                reglesDiv.style.left = '50%';
+                reglesDiv.style.transform = 'translate(-50%, -50%)';
+                reglesDiv.style.backgroundColor = 'rgba(0, 100, 0, 0.8)';
+                reglesDiv.style.width = '78vw';
+                reglesDiv.style.height = '43vh';
+                reglesDiv.style.maxWidth = '358px';
+                reglesDiv.style.maxHeight = '568px';
+                reglesDiv.style.overflowY = 'auto';
+                reglesDiv.style.overflowX = 'hidden';
+                reglesDiv.style.padding = '20px';
+                reglesDiv.style.border = '1px solid black';
+                reglesDiv.style.color = 'white';
+                reglesDiv.style.zIndex = '9999';
+
+                const texteRegles = document.createElement('p');
+                texteRegles.innerHTML = `
+                    <h2>Règles du jeu</h2>
+                    <p>Siam est un jeu de stratégie pour deux joueurs où l'objectif est de pousser une montagne hors du plateau en utilisant des pions. Voici les mécanismes principaux :</p>
+                    <h3>Sélection et déplacement d'un pion :</h3>
+                    <p>Clique sur un pion pour voir les déplacements possibles (indiqués par des cases bleues ou rouges).</p>
+                    <p>Clique sur une case bleue ou rouge pour déplacer le pion à cet endroit.</p>
+                    <h3>Rotation d'un pion :</h3>
+                    <p>Clique une seconde fois sur ton pion pour le faire pivoter et changer sa direction. Cela permet d’orienter le pion pour mieux pousser ou bloquer.</p>
+                    <h3>Utilisation d’un pion de la réserve :</h3>
+                    <p>Si tu ne souhaites pas jouer un coup, clique deux fois sur un pion de la réserve pour passer ton tour.</p>
+                    <h3>Objectif :</h3>
+                    <p>Pousse une montagne hors du plateau pour gagner, tout en anticipant et bloquant les mouvements de ton adversaire.</p>
+                    <p>Ce jeu mêle réflexion, stratégie et anticipation, parfait pour les amateurs de défis tactiques !</p>
+                `;
+
+                reglesDiv.appendChild(texteRegles);
+
+                reglesDiv.addEventListener('click', (event) => {
+                    if (event.target === reglesDiv) {
+                        reglesDiv.remove();
+                        reglesDiv = null;
+                    }
+                });
+
+                document.body.appendChild(reglesDiv);
+            } else {
+                reglesDiv.remove();
+                reglesDiv = null;
+            }
+
+            document.body.appendChild(reglesDiv);
+        });
+        
+        document.body.appendChild(boutonRegles);
+    }
+    
     // Fonction pour ajouter la barre des joueurs
     addPlayerBar() {
         const barreRouge = document.createElement('div');
