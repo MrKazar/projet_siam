@@ -31,22 +31,22 @@ class Case{
     }
 
     voisinHaut(){
-        if (!this.enJeu())return null;
+        //if (!this.enJeu())return null;
         return tableCases[(this.X+7*this.Y)-7];
     }
 
     voisinBas(){
-        if (!this.enJeu())return null;
+        //if (!this.enJeu())return null;
         return tableCases[(this.X+7*this.Y)+7];
     }
 
     voisinDroite(){
-        if (!this.enJeu())return null;
+        //if (!this.enJeu())return null;
         return tableCases[(this.X+7*this.Y)+1];
     }
 
     voisinGauche(){
-        if (!this.enJeu())return null;
+        //if (!this.enJeu())return null;
         return tableCases[(this.X+7*this.Y)-1];
     }
 
@@ -62,6 +62,7 @@ class Case{
 
     setContenu(pion){
         //Pour poser un pion sur une case où vider une case (setContenu(null))
+        console.log(`setContenu(${pion})`);
         this.contenu = pion;
     }
 
@@ -83,6 +84,27 @@ class Case{
         return !(this.contenu);
     }
 
+    allDoors(){
+        //retourne la liste des cases voisine hors du plateau chacunes associées à la direction dans laquelle aller pour les trouver.
+        //door = porte d'entrée pour insérer une pièce tout en poussant.
+        var directions = ["haut","bas","gauche","droite"];
+        var dir;
+        var voisin;
+        var res = new Array();
+        for (dir of directions){
+            voisin = this.caseVoisine(dir);
+            if (!voisin.enJeu() && this.getContenu().retroInsertionPossible(dir)){
+                res.push([voisin,dir]);
+            }
+        }
+        return res;
+    }
+
+    insertionFound(){
+        const doors = this.allDoors();
+        console.log(`insertionFound() : ${doors.length}`);
+        return doors.length !== 0;
+    }
 }
 
 class Pion{
@@ -170,7 +192,11 @@ class Pion{
 
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
-        //console.log("PeutPousser() : a été appelé.");
+        //console.log(`PeutPousser(${sens}) : a été appelé.`);
+        if (this.direction !== sens){
+            //La pièce n'est pas orientée correctement, on ne peut pas pousser.
+            return false;
+        }
         if (!this.position.caseVoisine(sens).enJeu()){
             //On est au bord du plateau, on peut donc pousser.
             return true;
@@ -178,10 +204,6 @@ class Pion{
         if (!this.pionVoisin(sens)){
             //Pas de voisin, donc on peut pousser
             return true;
-        }
-        if (this.direction !== sens){
-            //La pièce n'est pas orientée correctement, on ne peut pas pousser.
-            return false;
         }
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
@@ -248,6 +270,23 @@ class Pion{
         if (this.peutPousser("droite")){res.push(this.position.voisinDroite())}
         if (this.peutPousser("gauche")){res.push(this.position.voisinGauche())}
         return res;
+    }
+
+    retroInsertionPossible(sens){
+        //Lorsqu'un pion est placé sur la circonférence de la zone de jeu, il est parfois possible d'insérer une pièce (depuis la case porte) tout en la poussant.
+        //Cette méthode regarde si c'est possible.
+        //console.log(`retroInsertionPossible(${sens})`);
+        const retroSens = this.oppose(sens);
+        if (this.peutPousser(retroSens))return true;//Si le pion pouvait dejà pousser, on peut évidemment insérer.
+        //console.log(`retroInsertionPossible(${sens}) : cannot push`);
+        if (this.getDirection() === sens)return false;//Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
+        //console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
+        var ami = this.nbAmis(sens);
+        var rocher = this.nbRochers(sens , this.getDirection() === retroSens ? 2 : 1 );
+        if (rocher > ami)return false;
+        //console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
+        if (!this.pionVoisin(retroSens))return true;
+        //console.log(`retroInsertionPossible(${sens}) : got past everything ?`);
     }
 
     
@@ -612,7 +651,7 @@ class Jeu{
             circonference.push(tableCases[8+7*i]);
             circonference.push(tableCases[tableCases.length-(8+7*i)-1]);
         }
-        targetsList = circonference.filter(elt => {return elt.estVide();});
+        targetsList = circonference.filter(elt => {return elt.estVide() || elt.insertionFound();});
         targetsList.forEach(elt => {elt.setAccessible(true);});
         if (this.timer < 3){
             tableCases[10].setAccessible(false);
@@ -840,17 +879,19 @@ class Interface {
                 const texteRegles = document.createElement('p');
                 texteRegles.innerHTML = `
                     <h2>Règles du jeu</h2>
-                    <p>Siam est un jeu de stratégie pour deux joueurs où l'objectif est de pousser une montagne hors du plateau en utilisant des pions. Voici les mécanismes principaux :</p>
+                    <p>Bonjour cher joueur !!! Bienvenu dans Siam, un jeu que vous n'êtes pas prêt d'oublier.</p>
                     <h3>Sélection et déplacement d'un pion :</h3>
-                    <p>Clique sur un pion pour voir les déplacements possibles (indiqués par des cases bleues ou rouges).</p>
-                    <p>Clique sur une case bleue ou rouge pour déplacer le pion à cet endroit.</p>
+                    <p>Cliquez sur un pion pour visualiser tous ses déplacements possibles (indiqués par des cases bleues ou rouges).</p>
+                    <p>Si vous cliquez sur une case rouge où bleue, vous déplacerez le pion que vous avez séléctionné sur cette case. Si une case est rouge où bleue alors qu'une pièce est placée dessus, cela signifie que votre pion peut le pousser ! En effet, dans Siam, vous pouvez pousser les pions des autres ainsi que les pièces rocher quand certaines conditions sont réunies.</p>
+                    <p>Pour avoir le droit de pousser un pion, vous devez être dans la case voisine tout en étant orienté dans la direction de la poussée (vos pièces sont surmontées d'une flèche noire qui indique leur orientation). Plusieurs pièces adjacentes orientées dans la même direction peuvent s'unir pour pousser plusieurs pièces à la fois. Par exemple, deux éléphants peuvent pousser deux rochers.</p>
+                    <p>1 pion peut pousser un rocher, deux pions peuvent pousser deux rochers et ainsi de suite. Les pions qui ne sont pas des rochers et qui ne font pas face à votre pièce n'ont pas de poid, vous pouvez en pousser autant que vous voulez. Attention, si une ou plusieurs pièces, adverses où pas sont orientées dans le sens contraire au votre, vous ne pourrez pousser que si elles sont en inferiorité numérique par rapport aux pièces qui sont orientées comme vous.</p>
                     <h3>Rotation d'un pion :</h3>
-                    <p>Clique une seconde fois sur ton pion pour le faire pivoter et changer sa direction. Cela permet d’orienter le pion pour mieux pousser ou bloquer.</p>
+                    <p>Cliquez une deux fois sur le même pion pour le faire pivoter et changer sa direction sans le déplacer. Cela permet d’orienter le pion pour mieux pousser ou bloquer.</p>
                     <h3>Utilisation d’un pion de la réserve :</h3>
-                    <p>Si tu ne souhaites pas jouer un coup, clique deux fois sur un pion de la réserve pour passer ton tour.</p>
+                    <p>Les pions dans la réserve peuvent être placés n'importe où sur la circonférence de la zone de jeu, sauf pendant les deux premiers touts où les cases centrales ne sont pas accesibles, utilisez cela a vortre aventage pour faire rapidement obstruction aux mouvements de votre adversaire ! Par ailleurs, dans cette version du jeu, il est possible de passer son tour lorsqu'on a des pions dans la réserve en cliquant deux fois dessus. Lorsqu'un pion est sorti du plateau lors d'un déplacement où qu'il est poussé, il revient automatiquement dans la réserve.</p>
                     <h3>Objectif :</h3>
-                    <p>Pousse une montagne hors du plateau pour gagner, tout en anticipant et bloquant les mouvements de ton adversaire.</p>
-                    <p>Ce jeu mêle réflexion, stratégie et anticipation, parfait pour les amateurs de défis tactiques !</p>
+                    <p>Pour gagner la partie, il faut être le premier à pousser un rocher hors du plateau, mais attention, c'est le pion le plus proche du rocher à être correctement orienté qui gagne.</p>
+                    <p>Nous vous souhaitons une merveilleuse partie!!!!!!!!!!!!!!!!</p>
                 `;
 
                 reglesDiv.appendChild(texteRegles);
@@ -918,7 +959,8 @@ class Interface {
                         this.buffer = null;
                         return;
                     }
-                    alert("onClickEvent(): weird occurence")
+                    //Le joueur souhaite insérer son pion tout en poussant.
+                    this.insertFromOutside(pionChoisi,this.buffer);
                     return;
                 }
                 jeu.eteintPlateau();
@@ -944,6 +986,21 @@ class Interface {
         if (pionChoisi !== this.buffer.pionVoisin(this.buffer.getDirection()))return false;//On ne peut pas pousser un pion qui n'est pas notre voisin.
         if (!this.buffer.peutPousser(this.buffer.getDirection()))return false;//On ne peut pas pousser si la pièce n'est pas assez forte.
         return true;
+    }
+
+    insertFromOutside(pionChoisi,buffer){
+        //insère buffer en poussant pionChoisi.
+        const doors = pionChoisi.position.allDoors();
+        var door = doors[0][0];//Provisoire ?
+        var direction = pionChoisi.oppose(doors[0][1]);
+        console.log(`insertFromOutside() : door is ${door}`);
+        buffer.deplacePion(door,true);
+        buffer.setDirection(direction);
+        this.jeu.updatePlateau();
+        console.log("ok1");
+        buffer.poussePion(direction);
+        console.log("ok2");
+        this.MovementProcedure(false);
     }
 
     MovementProcedure(askForRotation){
