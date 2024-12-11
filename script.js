@@ -62,7 +62,7 @@ class Case{
 
     setContenu(pion){
         //Pour poser un pion sur une case où vider une case (setContenu(null))
-        console.log(`setContenu(${pion})`);
+        //console.log(`setContenu(${pion})`);
         this.contenu = pion;
     }
 
@@ -102,7 +102,7 @@ class Case{
 
     insertionFound(){
         const doors = this.allDoors();
-        console.log(`insertionFound() : ${doors.length}`);
+        //console.log(`insertionFound() : ${doors.length}`);
         return doors.length !== 0;
     }
 }
@@ -193,16 +193,16 @@ class Pion{
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
         //console.log(`PeutPousser(${sens}) : a été appelé.`);
+        if (!this.pionVoisin(sens)){
+            //Pas de voisin, donc on peut pousser
+            return true;
+        }
         if (this.direction !== sens){
             //La pièce n'est pas orientée correctement, on ne peut pas pousser.
             return false;
         }
         if (!this.position.caseVoisine(sens).enJeu()){
             //On est au bord du plateau, on peut donc pousser.
-            return true;
-        }
-        if (!this.pionVoisin(sens)){
-            //Pas de voisin, donc on peut pousser
             return true;
         }
         var ami = this.nbAmis(sens,1);
@@ -269,6 +269,7 @@ class Pion{
         if (this.peutPousser("bas")){res.push(this.position.voisinBas())}
         if (this.peutPousser("droite")){res.push(this.position.voisinDroite())}
         if (this.peutPousser("gauche")){res.push(this.position.voisinGauche())}
+        console.log(`getPossibilites() : res = ${res}`);
         return res;
     }
 
@@ -282,11 +283,11 @@ class Pion{
         if (this.getDirection() === sens)return false;//Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
         //console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
         var ami = this.nbAmis(sens);
-        var rocher = this.nbRochers(sens , this.getDirection() === retroSens ? 2 : 1 );
+        var rocher = this.nbRochers(sens , this.getDirection() === retroSens ? 1 : 2 );
+        console.log(`retroInsertionPossible(${sens}) : rocher = ${rocher}`);
         if (rocher > ami)return false;
-        //console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
-        if (!this.pionVoisin(retroSens))return true;
-        //console.log(`retroInsertionPossible(${sens}) : got past everything ?`);
+        console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
+        return true;
     }
 
     
@@ -691,11 +692,11 @@ class Jeu{
         //alert("allumons les possibilités");
         var caseAccessible;
         if (!pionChoisi){alert("allumePossibilites() : pionChoisi doesn't exist apparently.");}
-        if (!pionChoisi.position.enJeu()){
+        if (!pionChoisi.position.enJeu()){//Circonférence
             this.allumeCirconference();
             this.aff.affichePossibilites(this.tour);
             return;
-        }
+        }//Pièce en jeu
         for (caseAccessible of pionChoisi.getPossibilites()){
             caseAccessible.setAccessible(true);
         }
@@ -879,7 +880,7 @@ class Interface {
                 const texteRegles = document.createElement('p');
                 texteRegles.innerHTML = `
                     <h2>Règles du jeu</h2>
-                    <p>Bonjour cher joueur !!! Bienvenu dans Siam, un jeu que vous n'êtes pas prêt d'oublier.</p>
+                    <p>Bonjour cher joueur !!! Bienvenue dans Siam, un jeu que vous n'êtes pas prêt d'oublier.</p>
                     <h3>Sélection et déplacement d'un pion :</h3>
                     <p>Cliquez sur un pion pour visualiser tous ses déplacements possibles (indiqués par des cases bleues ou rouges).</p>
                     <p>Si vous cliquez sur une case rouge où bleue, vous déplacerez le pion que vous avez séléctionné sur cette case. Si une case est rouge où bleue alors qu'une pièce est placée dessus, cela signifie que votre pion peut le pousser ! En effet, dans Siam, vous pouvez pousser les pions des autres ainsi que les pièces rocher quand certaines conditions sont réunies.</p>
