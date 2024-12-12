@@ -1,5 +1,6 @@
 var plateau = document.getElementById("conteneurDeCases");
 var tableCases = []; //Toutes les cases du plateau sont rangées ici et numérotées de 0 à 48.
+var gagnant = null; //Indique dans quel sens il faut parcourir la rangée pour trouver le gagnant (c'est donc un string de type direction)
 
 
 class Case{
@@ -171,7 +172,9 @@ class Pion{
         //Parcourt récurcivement une rangée en incrémentant res de 1 lorsqu'on rencontre une pièce orientée dans notre sens et -1 si on rencontre une pièce qui fait face.
         //Si on atteint une case vide où hors jeu, retourne true. Si res vaut 0, retourne immédiatement false.
         if (this.getType() == "rocher" && !this.position.caseVoisine(sens).enJeu()){
-            this.retropedalage(sens);
+            gagnant = sens;
+            console.log(`rapportDeForce() : rock out`);
+            return true;
         }
         if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
@@ -207,8 +210,8 @@ class Pion{
         }
         var ami = this.nbAmis(sens,1);
         var rocher = this.nbRochers(sens,0);
-        console.log(ami);
-        console.log(rocher);
+        //console.log(ami);
+        //console.log(rocher);
         return (this.rapportDeForce(sens) && ami >= rocher);
     }
 
@@ -220,13 +223,7 @@ class Pion{
             pionCourant = pionCourant.pionVoisin(this.oppose(sens));
         }
         pionCourant.poussePion(this.oppose(sens));
-        if (pionCourant.getType() == "ele"){
-            alert("La partie fut mouvementée, mais les braves éléphants en sortirent vainqueurs.");
-        }
-        else alert("Après moultes péripéties, les rhinocéros triomphèrent.");
-        alert("Cependant, leurs adversaires, inflexibles, revinrent, leur détermination doublée. Et ainsi se poursuivit l'éternelle histoire de Siam.");
-        alert("Game Over");
-        window.location.reload();
+        return pionCourant;
     }
 
 
@@ -234,7 +231,7 @@ class Pion{
         //Fonction récursive qui permet de pousser une rangée à partir du pion this.
         var target = this.position.caseVoisine(sens);
         var voisin = this.pionVoisin(sens);
-        console.log(`PoussePion(${sens}) : case voisine = ${target}`);
+        //console.log(`PoussePion(${sens}) : case voisine = ${target}`);
         if (!voisin){
             this.deplacePion(target , true);
             return
@@ -269,25 +266,28 @@ class Pion{
         if (this.peutPousser("bas")){res.push(this.position.voisinBas())}
         if (this.peutPousser("droite")){res.push(this.position.voisinDroite())}
         if (this.peutPousser("gauche")){res.push(this.position.voisinGauche())}
-        console.log(`getPossibilites() : res = ${res}`);
+        //console.log(`getPossibilites() : res = ${res}`);
         return res;
     }
 
     retroInsertionPossible(sens){
         //Lorsqu'un pion est placé sur la circonférence de la zone de jeu, il est parfois possible d'insérer une pièce (depuis la case porte) tout en la poussant.
         //Cette méthode regarde si c'est possible.
-        //console.log(`retroInsertionPossible(${sens})`);
+        console.log(`retroInsertionPossible(${sens})`);
         const retroSens = this.oppose(sens);
-        if (this.peutPousser(retroSens))return true;//Si le pion pouvait dejà pousser, on peut évidemment insérer.
-        //console.log(`retroInsertionPossible(${sens}) : cannot push`);
         if (this.getDirection() === sens)return false;//Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
-        //console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
+        console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
+        if (this.peutPousser(retroSens))return true;//Si le pion pouvait dejà pousser, on peut évidemment insérer.
+        console.log(`retroInsertionPossible(${sens}) : cannot push`);
         var ami = this.nbAmis(sens);
-        var rocher = this.nbRochers(sens , this.getDirection() === retroSens ? 1 : 2 );
+        var rocher = this.nbRochers(retroSens , this.getDirection() === retroSens ? -1 : 0 );
         console.log(`retroInsertionPossible(${sens}) : rocher = ${rocher}`);
         if (rocher > ami)return false;
         console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
-        return true;
+        var voisin = this.pionVoisin(retroSens);
+        if (!voisin)return true;
+        console.log(`retroInsertionPossible(${sens}) : call on neighbor`);
+        return voisin.retroInsertionPossible(sens);
     }
 
     
@@ -764,7 +764,7 @@ class Jeu{
     pionBackHome(pion){
         //Renvoie un pion dans sa réserve.
         if (pion.getType() == "rocher"){
-            alert("pionBackHome() : condition de victoire atteinte.")
+            this.gameOver(pion.retropedalage(gagnant));
             return;
         }
         var destiCase = this.findHome(pion.getType());
@@ -792,6 +792,16 @@ class Jeu{
             case "ryno": return "rhynocéros"
             default: alert("wtf");return;
         }
+    }
+
+    gameOver(gagnant){
+        if (gagnant.getType() == "ele"){
+            alert("La partie fut mouvementée, mais les braves éléphants en sortirent vainqueurs.");
+        }
+        else alert("Après moultes péripéties, les valeureux rhinocéros triomphèrent.");
+        alert("Cependant, leurs adversaires, inflexibles, revinrent, leur détermination doublée. Et ainsi se poursuivit l'éternelle histoire de Siam.");
+        alert("Game Over");
+        window.location.reload();
     }
 
 
@@ -994,13 +1004,13 @@ class Interface {
         const doors = pionChoisi.position.allDoors();
         var door = doors[0][0];//Provisoire ?
         var direction = pionChoisi.oppose(doors[0][1]);
-        console.log(`insertFromOutside() : door is ${door}`);
+        //console.log(`insertFromOutside() : door is ${door}`);
         buffer.deplacePion(door,true);
         buffer.setDirection(direction);
         this.jeu.updatePlateau();
-        console.log("ok1");
+        //console.log("ok1");
         buffer.poussePion(direction);
-        console.log("ok2");
+        //console.log("ok2");
         this.MovementProcedure(false);
     }
 
