@@ -160,20 +160,14 @@ class Pion{
         }
     }
 
-    nbAmis(sens,res=1){
-        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la même direction que this.
+    vsRochers(sens,res=2){
+        console.log(`vsRochers(${sens},${res})`);
+        if (res === 0)return false;
         var voisin = this.pionVoisin(sens);
-        if (!voisin)return res;
-        if (voisin.getDirection() === sens)res ++;
-        return voisin.nbAmis(sens,res);
-    }
-
-    nbAdversaires(sens,res=1){
-        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la direction opposée à this.
-        var voisin = this.pionVoisin(sens);
-        if (!voisin)return res;
-        if (voisin.getDirection() === this.oppose(sens))res ++;
-        return voisin.nbAmis(sens,res);
+        if (!voisin)return true;
+        if (voisin.getType() === "rocher")res --;
+        else if(voisin.getDirection() === sens)res ++;
+        return voisin.vsRochers(sens,res);
     }
 
     rapportDeForce(sens,res=1){
@@ -195,14 +189,6 @@ class Pion{
         return voisin.rapportDeForce(sens,res);
     }
 
-    nbRochers(sens,res=0){
-        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de rochers.
-        var voisin = this.pionVoisin(sens);
-        if (!voisin)return res;
-        if (voisin.getType() === "rocher")res ++;
-        return voisin.nbRochers(sens,res);
-    }
-
     peutPousser(sens){
         //Détermine si on peut pousser dans une direction.
         //console.log(`PeutPousser(${sens}) : a été appelé.`);
@@ -218,11 +204,7 @@ class Pion{
             //On est au bord du plateau, on peut donc pousser.
             return true;
         }
-        var ami = this.nbAmis(sens,1);
-        var rocher = this.nbRochers(sens,0);
-        //console.log(ami);
-        //console.log(rocher);
-        return (this.rapportDeForce(sens) && ami >= rocher);
+        return (this.rapportDeForce(sens) && this.vsRochers(sens));
     }
 
     retropedalage(sens){
@@ -284,39 +266,17 @@ class Pion{
     retroInsertionPossible(sens){
         //Lorsqu'un pion est placé sur la circonférence de la zone de jeu, il est parfois possible d'insérer une pièce (depuis la case porte) tout en la poussant.
         //Cette méthode regarde si c'est possible.
-        /*
-        console.log(`retroInsertionPossible(${sens}) : called from ${this.getType()} at (${this.position.getX()} , ${this.position.getY()})`);
-        const retroSens = this.oppose(sens);
-        if (this.getDirection() === sens){
-            console.log(`retroInsertionPossible(${sens}) : was blocking`);
-            return false;
-        }
-        //Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
-        console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
-        if (this.peutPousser(retroSens))return true;//Si le pion pouvait dejà pousser, on peut évidemment insérer.
-        console.log(`retroInsertionPossible(${sens}) : cannot push`);
-        
-        var ami = this.nbAmis(sens) + 1;
-        var rocher = this.nbRochers(retroSens , this.getDirection() === retroSens ? 0 : 1 );
-        console.log(`retroInsertionPossible(${sens}) : rocher = ${rocher}`);
-        if (rocher > ami)return false;
-        console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
-        var voisin = this.pionVoisin(retroSens);
-        if (!voisin)return true;
-        console.log(`retroInsertionPossible(${sens}) : call on neighbor`);
-        return voisin.retroInsertionPossible(sens);
-        */
-       var voisin = this.pionVoisin(sens);
-       var phantomAdded = false;
-       if (!voisin){
+        var voisin = this.pionVoisin(sens);
+        var phantomAdded = false;
+        if (!voisin){
         this.position.caseVoisine(sens).setContenu(new Pion("ele",this.position.caseVoisine(sens),this.oppose(sens)))
         voisin = this.pionVoisin(sens);
         phantomAdded = true;
-    }
-    var res = voisin.peutPousser(this.oppose(sens));
-    if (phantomAdded)this.position.caseVoisine(sens).setContenu(null);
-    console.log(`retroInsertionPossible(${sens}) : called from ${this.getType()} at (${this.position.getX()} , ${this.position.getY()}) and returns ${res}`);
-    return res;
+        }
+        var res = voisin.peutPousser(this.oppose(sens));
+        if (phantomAdded)this.position.caseVoisine(sens).setContenu(null);
+        console.log(`retroInsertionPossible(${sens}) : called from ${this.getType()} at (${this.position.getX()} , ${this.position.getY()}) and returns ${res}`);
+        return res;
     }
 
     
