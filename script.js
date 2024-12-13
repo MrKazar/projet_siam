@@ -94,7 +94,7 @@ class Case{
         var res = new Array();
         for (dir of directions){
             voisin = this.caseVoisine(dir);
-            if (!voisin.enJeu() && this.getContenu().retroInsertionPossible(dir)){
+            if (!voisin.enJeu() && voisin.estVide() && this.getContenu().retroInsertionPossible(dir)){
                 res.push([voisin,dir]);
             }
         }
@@ -168,15 +168,25 @@ class Pion{
         return voisin.nbAmis(sens,res);
     }
 
+    nbAdversaires(sens,res=1){
+        //Parcourt une rangée dans le sens indiqué pour trouver le nombre de pièces qui poussent dans la direction opposée à this.
+        var voisin = this.pionVoisin(sens);
+        if (!voisin)return res;
+        if (voisin.getDirection() === this.oppose(sens))res ++;
+        return voisin.nbAmis(sens,res);
+    }
+
     rapportDeForce(sens,res=1){
         //Parcourt récurcivement une rangée en incrémentant res de 1 lorsqu'on rencontre une pièce orientée dans notre sens et -1 si on rencontre une pièce qui fait face.
         //Si on atteint une case vide où hors jeu, retourne true. Si res vaut 0, retourne immédiatement false.
+        if (res == 0)return false;
         if (this.getType() == "rocher" && !this.position.caseVoisine(sens).enJeu()){
             gagnant = sens;
             console.log(`rapportDeForce() : rock out`);
+            //Quand un rocher va sortir, il faut virer toutes les pièces encombrantes pour sa sortie.
+            if (!this.position.caseVoisine(sens).estVide())this.position.caseVoisine(sens).getContenu().deplacePion(tableCases[0],true);
             return true;
         }
-        if (res == 0)return false;
         var voisin = this.pionVoisin(sens);
         if (!voisin)return true;
         if (!voisin.position.enJeu())return true;//Le pièces hors plateau sont intengibles.
@@ -218,6 +228,7 @@ class Pion{
     retropedalage(sens){
         //Un rocher est sur le point de sortir !!!
         //Il faut aller voir qui est la pièce la plus proche à être orienté vers la sortie, c'est son type qui est gagnant.
+        console.log(`retropedalage(${sens})`);
         var pionCourant = this.pionVoisin(this.oppose(sens));
         while (pionCourant.getDirection() !== sens){
             pionCourant = pionCourant.pionVoisin(this.oppose(sens));
@@ -273,14 +284,20 @@ class Pion{
     retroInsertionPossible(sens){
         //Lorsqu'un pion est placé sur la circonférence de la zone de jeu, il est parfois possible d'insérer une pièce (depuis la case porte) tout en la poussant.
         //Cette méthode regarde si c'est possible.
-        console.log(`retroInsertionPossible(${sens})`);
+        /*
+        console.log(`retroInsertionPossible(${sens}) : called from ${this.getType()} at (${this.position.getX()} , ${this.position.getY()})`);
         const retroSens = this.oppose(sens);
-        if (this.getDirection() === sens)return false;//Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
+        if (this.getDirection() === sens){
+            console.log(`retroInsertionPossible(${sens}) : was blocking`);
+            return false;
+        }
+        //Si le pion est tourné vers l'entrée de l'insertion, cette dernière est bloquée tout de suite.
         console.log(`retroInsertionPossible(${sens}) : wasnt blocking`);
         if (this.peutPousser(retroSens))return true;//Si le pion pouvait dejà pousser, on peut évidemment insérer.
         console.log(`retroInsertionPossible(${sens}) : cannot push`);
-        var ami = this.nbAmis(sens);
-        var rocher = this.nbRochers(retroSens , this.getDirection() === retroSens ? -1 : 0 );
+        
+        var ami = this.nbAmis(sens) + 1;
+        var rocher = this.nbRochers(retroSens , this.getDirection() === retroSens ? 0 : 1 );
         console.log(`retroInsertionPossible(${sens}) : rocher = ${rocher}`);
         if (rocher > ami)return false;
         console.log(`retroInsertionPossible(${sens}) : not too many rocks`);
@@ -288,6 +305,18 @@ class Pion{
         if (!voisin)return true;
         console.log(`retroInsertionPossible(${sens}) : call on neighbor`);
         return voisin.retroInsertionPossible(sens);
+        */
+       var voisin = this.pionVoisin(sens);
+       var phantomAdded = false;
+       if (!voisin){
+        this.position.caseVoisine(sens).setContenu(new Pion("ele",this.position.caseVoisine(sens),this.oppose(sens)))
+        voisin = this.pionVoisin(sens);
+        phantomAdded = true;
+    }
+    var res = voisin.peutPousser(this.oppose(sens));
+    if (phantomAdded)this.position.caseVoisine(sens).setContenu(null);
+    console.log(`retroInsertionPossible(${sens}) : called from ${this.getType()} at (${this.position.getX()} , ${this.position.getY()}) and returns ${res}`);
+    return res;
     }
 
     
@@ -791,7 +820,7 @@ class Jeu{
         switch(tour){
             case "ele": return "éléphants"
             case "ryno": return "rhynocéros"
-            default: alert("wtf");return;
+            default: console.log(`playerFriendlyLanguage(${tour}) : unknown type input`);return;
         }
     }
 
