@@ -94,7 +94,7 @@ class Case{
         var res = new Array();
         for (dir of directions){
             voisin = this.caseVoisine(dir);
-            if (!voisin.enJeu() && voisin.estVide() && this.getContenu().retroInsertionPossible(dir)){
+            if (!voisin.enJeu() && this.getContenu().retroInsertionPossible(dir)){
                 res.push([voisin,dir]);
             }
         }
@@ -889,7 +889,7 @@ class Interface {
                     <h3>Rotation d'un pion :</h3>
                     <p>Cliquez une deuxieme fois sur le même pion après avoir choisi ou le placer pour le faire pivoter et changer sa direction sans le déplacer. Cela permet d’orienter le pion pour mieux pousser ou bloquer.</p>
                     <h3>Utilisation d'un pion de la réserve :</h3>
-                    <p>Les pions dans la réserve peuvent être placés n'importe où sur la circonférence de la zone de jeu, sauf pendant les deux premiers touts où les cases centrales ne sont pas accesibles, utilisez cela a vortre aventage pour faire rapidement obstruction aux mouvements de votre adversaire ! Par ailleurs, dans cette version du jeu, il est possible de passer son tour lorsqu'on a des pions dans la réserve en cliquant deux fois dessus. Lorsqu'un pion est sorti du plateau lors d'un déplacement où qu'il est poussé, il revient automatiquement dans la réserve.</p>
+                    <p>Les pions dans la réserve peuvent être placés n'importe où sur la circonférence de la zone de jeu, sauf pendant les deux premiers touts où les cases centrales ne sont pas accesibles, utilisez cela a vortre aventage pour faire rapidement obstruction aux mouvements de votre adversaire ! Lorsqu'un pion est sorti du plateau lors d'un déplacement où qu'il est poussé, il revient automatiquement dans la réserve.</p>
                     <h3>Objectif :</h3>
                     <p>Pour gagner la partie, il faut être le premier à pousser un rocher hors du plateau, mais attention, c'est le pion le plus proche du rocher à être correctement orienté qui gagne.</p>
                     <p>Nous vous souhaitons une merveilleuse partie!!!!!!!!!!!!!!!!</p>
@@ -942,14 +942,16 @@ class Interface {
       }
 
     onClickEvent(x, y, jeu) {
+        //La fonction principale du jeu qui gère l'intégralité des actions que le joueur peut provoquer en cliquant sur une case.
         return function () {
             var caseChoisie = gatherFromTableCases(x, y);
             var pionChoisi = caseChoisie.getContenu();
             if (pionChoisi) {
                 // Le joueur n'a pas appuyé sur une case vide.
-                if (pionChoisi === this.buffer){
+                if (pionChoisi === this.buffer && caseChoisie.enJeu()){
                     // Le joueur a appuyé deux fois de suite sur la même pièce, il veut donc tourner sans bouger.
                     this.MovementProcedure(true);
+                    this.buffer = null;
                     return;
                 }
                 if (caseChoisie.getAccessible()){
@@ -992,15 +994,18 @@ class Interface {
     insertFromOutside(pionChoisi,buffer){
         //insère buffer en poussant pionChoisi.
         const doors = pionChoisi.position.allDoors();
-        var door = doors[0][0];//Provisoire ?
+        var door = doors[0][0];
         var direction = pionChoisi.oppose(doors[0][1]);
         //console.log(`insertFromOutside() : door is ${door}`);
+        var crushed = door.getContenu();//Si un pion est écrasé par l'insertion, il faut le sauvegarder et le restaurer.
         buffer.deplacePion(door,true);
         buffer.setDirection(direction);
         this.jeu.updatePlateau();
-        //console.log("ok1");
         buffer.poussePion(direction);
-        //console.log("ok2");
+        if (crushed){
+            crushed.deplacePion(door,true);
+            console.log(`insertFromOutside() : pion ${crushed.getType()} a été restauré sur la case (${door.getX()} , ${door.getY()})`);
+        }
         this.MovementProcedure(false);
     }
 
